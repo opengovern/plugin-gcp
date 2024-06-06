@@ -1,0 +1,54 @@
+---
+project_name: kaytu
+
+release:
+  github:
+    owner: "{{ .Env.REPOSITORY_OWNER }}"
+    name:  "{{ .Env.REPOSITORY_NAME }}"
+  prerelease: auto
+  make_latest: "{{ .Env.GORELEASER_MAKE_LATEST}}"
+
+checksum: {}
+
+builds:
+  - id: linux
+    binary: kaytu
+    ldflags:
+      - -s -w -X github.com/{{ .Env.REPOSITORY_OWNER }}/{{ .Env.REPOSITORY_NAME }}/pkg/version.VERSION={{ .Version }}
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    main: ./main.go
+  - id: darwin
+    binary: kaytu
+    ldflags:
+      - -s -w -X github.com/{{ .Env.REPOSITORY_OWNER }}/{{ .Env.REPOSITORY_NAME }}/pkg/version.VERSION={{ .Version }}
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    main: ./main.go
+  - id: windows
+    binary: kaytu
+    ldflags:
+      - -s -w -X github.com/{{ .Env.REPOSITORY_OWNER }}/{{ .Env.REPOSITORY_NAME }}/pkg/version.VERSION={{ .Version }}
+    goos:
+      - windows
+    goarch:
+      - amd64
+    main: ./main.go
+archives:
+  - id: binary
+    format: binary
+  - id: windows
+    format: zip
+    builds: [windows]
+  - id: linux
+    format: tar.gz
+    builds: [linux]
+  - id: darwin 
+    format: tar.gz
+    builds: [darwin]
