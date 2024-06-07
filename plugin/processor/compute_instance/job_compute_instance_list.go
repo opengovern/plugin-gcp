@@ -67,6 +67,10 @@ func (job *ListComputeInstancesJob) Run() error {
 		job.processor.publishOptimizationItem(oi.ToOptimizationItem())
 	}
 
+	if err = job.processor.provider.CloseClient(); err != nil {
+		return err
+	}
+
 	return nil
 
 }
