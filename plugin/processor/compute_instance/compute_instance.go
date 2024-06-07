@@ -12,7 +12,7 @@ import (
 type ComputeInstanceProcessor struct {
 	provider *gcp.Compute
 	// metricProvider          *gcp.CloudMonitoring
-	identification          map[string]string
+	// identification          map[string]string
 	items                   util.ConcurrentMap[string, ComputeInstanceItem]
 	publishOptimizationItem func(item *golang.OptimizationItem)
 	kaytuAcccessToken       string
@@ -30,7 +30,7 @@ func NewComputeInstanceProcessor(
 		provider: prv,
 		// metricProvider: metric,
 		// identification: identification,
-		// items:                   util.NewMap[string, EC2InstanceItem](),
+		items:                   util.NewMap[string, ComputeInstanceItem](),
 		publishOptimizationItem: publishOptimizationItem,
 		kaytuAcccessToken:       kaytuAcccessToken,
 		jobQueue:                jobQueue,

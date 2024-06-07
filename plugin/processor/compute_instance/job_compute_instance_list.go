@@ -1,6 +1,7 @@
 package compute_instance
 
 import (
+	"context"
 	"log"
 	"strconv"
 
@@ -30,10 +31,17 @@ func (job *ListComputeInstancesJob) Run() error {
 
 	log.Println("Running list compute instance job")
 
+	err := job.processor.provider.InitializeClient(context.Background())
+	if err != nil {
+		return err
+	}
+
 	instances, err := job.processor.provider.GetAllInstances()
 	if err != nil {
 		return err
 	}
+
+	log.Printf("# of instances: %d", len(instances))
 
 	for _, instance := range instances {
 		oi := ComputeInstanceItem{
@@ -53,10 +61,12 @@ func (job *ListComputeInstancesJob) Run() error {
 			// Preferences:         preferences2.DefaultEC2Preferences,
 		}
 
+		log.Printf("OI instance: %s", oi.Name)
+
 		job.processor.items.Set(oi.Id, oi)
 		job.processor.publishOptimizationItem(oi.ToOptimizationItem())
 	}
 
-	return job.processor.provider.ListAllInstances()
+	return nil
 
 }
