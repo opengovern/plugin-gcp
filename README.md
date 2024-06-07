@@ -34,18 +34,18 @@ curl -fsSL https://raw.githubusercontent.com/kaytu-io/kaytu/main/scripts/install
 Download Windows (Linux, and MacOS) binary from [releases](https://github.com/kaytu-io/kaytu/releases) 
 
 
-### 2. Login to AWS CLI
+### 2. Login to Gcloud CLI
 
-Kaytu works with your existing AWS CLI profile (read-only access required) to gather metrics.  
+Kaytu works with your existing Google Cloud CLI(gcloud) configuration (read-only access required) to gather metrics.  
 
-To confirm your AWS CLI login is working correctly:
+To confirm your gcloud login is configured correctly:
 
 ```
-aws sts get-caller-identity
+gcloud config list
 ```
-[Click here to see how to log in to AWS CLI.](https://docs.aws.amazon.com/signin/latest/userguide/command-line-sign-in.html)
+[Click here to see how to configure Gcloud.](https://cloud.google.com/sdk/docs/initializing)
 
-We respect your privacy. Our open-source code guarantees that we never collect sensitive information like AWS credentials, IPs, tags, etc.
+We respect your privacy. Our open-source code guarantees that we never collect sensitive information like GCP credentials, IPs, tags, etc.
 
 ### 3. Run Kaytu CLI
 
