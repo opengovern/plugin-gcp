@@ -15,19 +15,6 @@
     - 
 
 
-## Metric Request
-
-| Component | Description|
-|-----------|------------|
-| Name | "projects/`<project-id>`" |
-|Filter| metric name and resource(instance,device) |
-|Interval| start and end time for the metrics |
-|Aggregation| reformat for each data point |
-
-
-
-
-
 TODO:
 
  - Metrics Client
