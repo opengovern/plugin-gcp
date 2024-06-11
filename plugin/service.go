@@ -24,6 +24,36 @@ func NewPlugin() *GCPPlugin {
 
 func (p *GCPPlugin) GetConfig() golang.RegisterConfig {
 	log.Println("Get config")
+
+	overviewChart := &golang.ChartDefinition{
+
+		Columns: []*golang.ChartColumnItem{
+			{
+				Id:       "instance_name",
+				Name:     "Instance Name",
+				Width:    uint32(10),
+				Sortable: true,
+			},
+		},
+	}
+
+	devicesChart := &golang.ChartDefinition{
+		Columns: []*golang.ChartColumnItem{
+			{
+				Id:       "instance_name",
+				Name:     "Instance Name",
+				Width:    uint32(10),
+				Sortable: true,
+			},
+			{
+				Id:       "project_id",
+				Name:     "Project ID",
+				Width:    uint32(10),
+				Sortable: true,
+			},
+		},
+	}
+
 	return golang.RegisterConfig{
 		Name:     "kaytu-io/plugin-gcp",
 		Version:  version.VERSION,
@@ -44,6 +74,8 @@ func (p *GCPPlugin) GetConfig() golang.RegisterConfig {
 				LoginRequired:      true,
 			},
 		},
+		OverviewChart: overviewChart,
+		DevicesChart:  devicesChart,
 	}
 }
 
@@ -60,6 +92,14 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 			"https://www.googleapis.com/auth/compute.readonly",
 		},
 	)
+
+	publishChartItem := func(item *golang.ChartOptimizationItem) {
+		p.stream.Send(&golang.PluginMessage{
+			PluginMessage: &golang.PluginMessage_Coi{
+				Coi: item,
+			},
+		})
+	}
 
 	publishOptimizationItem := func(item *golang.OptimizationItem) {
 		p.stream.Send(&golang.PluginMessage{
@@ -84,6 +124,7 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 		p.processor = compute_instance.NewComputeInstanceProcessor(
 			gcpProvider,
 			publishOptimizationItem,
+			publishChartItem,
 			kaytuAccessToken,
 			jobQueue,
 		)
