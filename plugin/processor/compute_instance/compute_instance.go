@@ -13,16 +13,16 @@ type ComputeInstanceProcessor struct {
 	provider *gcp.Compute
 	// identification          map[string]string
 	items                   util.ConcurrentMap[string, ComputeInstanceItem]
-	publishOptimizationItem func(item *golang.OptimizationItem)
-	publishChartItem        func(item *golang.ChartOptimizationItem)
+	publishOptimizationItem func(item *golang.ChartOptimizationItem)
+	publishResultSummary    func(summary *golang.ResultSummary)
 	kaytuAcccessToken       string
 	jobQueue                *sdk.JobQueue
 }
 
 func NewComputeInstanceProcessor(
 	prv *gcp.Compute,
-	publishOptimizationItem func(item *golang.OptimizationItem),
-	publishChartItem func(item *golang.ChartOptimizationItem),
+	publishOptimizationItem func(item *golang.ChartOptimizationItem),
+	publishResultSummary func(summary *golang.ResultSummary),
 	kaytuAcccessToken string,
 	jobQueue *sdk.JobQueue,
 ) *ComputeInstanceProcessor {
@@ -31,7 +31,7 @@ func NewComputeInstanceProcessor(
 		// identification: identification,
 		items:                   util.NewMap[string, ComputeInstanceItem](),
 		publishOptimizationItem: publishOptimizationItem,
-		publishChartItem:        publishChartItem,
+		publishResultSummary:    publishResultSummary,
 		kaytuAcccessToken:       kaytuAcccessToken,
 		jobQueue:                jobQueue,
 		// configuration:           configurations,

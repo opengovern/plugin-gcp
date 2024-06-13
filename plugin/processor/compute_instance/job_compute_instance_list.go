@@ -59,8 +59,7 @@ func (job *ListComputeInstancesJob) Run() error {
 		log.Printf("OI instance: %s", oi.Name)
 
 		job.processor.items.Set(oi.Id, oi)
-		job.processor.publishChartItem(oi.ToChartOptimizationItem())
-		// job.processor.publishOptimizationItem(oi.ToOptimizationItem())
+		job.processor.publishOptimizationItem(oi.ToOptimizationItem())
 	}
 
 	if err = job.processor.provider.CloseClient(); err != nil {
