@@ -44,10 +44,13 @@ func (c *CloudMonitoring) CloseClient() error {
 	return nil
 }
 
-func (c *CloudMonitoring) NewMetricRequest(metricName string, instanceID string) *monitoringpb.ListTimeSeriesRequest {
-
-	endtime := time.Now()
-	starttime := endtime.Add(-24 * 1 * time.Hour) // 24 hours before current time
+func (c *CloudMonitoring) NewInstanceMetricRequest(
+	metricName string, // fully qualified name of the metric
+	instanceID string, // compute instance ID
+	startTime time.Time, // start time of requested time series
+	endTime time.Time, // end time of requested time series
+	periodInSeconds int64, // period, for which the datapoints will be aggregated into one, in seconds
+) *monitoringpb.ListTimeSeriesRequest {
 
 	request := &monitoringpb.ListTimeSeriesRequest{
 		Name: fmt.Sprintf("projects/%s", c.ProjectID),
@@ -57,11 +60,14 @@ func (c *CloudMonitoring) NewMetricRequest(metricName string, instanceID string)
 			instanceID,
 		),
 		Interval: &monitoringpb.TimeInterval{
-			EndTime:   timestamppb.New(endtime),
-			StartTime: timestamppb.New(starttime),
+			EndTime:   timestamppb.New(endTime),
+			StartTime: timestamppb.New(startTime),
 		},
 		Aggregation: &monitoringpb.Aggregation{
-			AlignmentPeriod: durationpb.New(time.Minute),
+			AlignmentPeriod: &durationpb.Duration{
+				Seconds: periodInSeconds,
+			},
+			PerSeriesAligner: monitoringpb.Aggregation_ALIGN_MEAN, // will represent all the datapoints in the above period, with a mean
 		},
 		View: monitoringpb.ListTimeSeriesRequest_FULL,
 	}

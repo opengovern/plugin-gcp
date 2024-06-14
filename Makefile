@@ -13,4 +13,4 @@ goreleaser: clean
 
 # test components of plugin/gcp
 testgcp:
-	go test -v ./plugin/gcp
+	go test -v ./plugin/gcp -count=1
