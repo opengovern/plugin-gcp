@@ -11,27 +11,27 @@ import (
 
 type ComputeInstanceProcessor struct {
 	provider *gcp.Compute
-	// metricProvider          *gcp.CloudMonitoring
 	// identification          map[string]string
 	items                   util.ConcurrentMap[string, ComputeInstanceItem]
-	publishOptimizationItem func(item *golang.OptimizationItem)
+	publishOptimizationItem func(item *golang.ChartOptimizationItem)
+	publishResultSummary    func(summary *golang.ResultSummary)
 	kaytuAcccessToken       string
 	jobQueue                *sdk.JobQueue
 }
 
 func NewComputeInstanceProcessor(
 	prv *gcp.Compute,
-	// metric *gcp.CloudMonitoring,
-	publishOptimizationItem func(item *golang.OptimizationItem),
+	publishOptimizationItem func(item *golang.ChartOptimizationItem),
+	publishResultSummary func(summary *golang.ResultSummary),
 	kaytuAcccessToken string,
 	jobQueue *sdk.JobQueue,
 ) *ComputeInstanceProcessor {
 	r := &ComputeInstanceProcessor{
 		provider: prv,
-		// metricProvider: metric,
 		// identification: identification,
 		items:                   util.NewMap[string, ComputeInstanceItem](),
 		publishOptimizationItem: publishOptimizationItem,
+		publishResultSummary:    publishResultSummary,
 		kaytuAcccessToken:       kaytuAcccessToken,
 		jobQueue:                jobQueue,
 		// configuration:           configurations,

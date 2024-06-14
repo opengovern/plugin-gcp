@@ -54,11 +54,6 @@ func (job *ListComputeInstancesJob) Run() error {
 			Skipped:             false,
 			LazyLoadingEnabled:  false,
 			SkipReason:          "NA",
-			// Instance:            *instance,
-			// Region:              j.region,
-			// OptimizationLoading: true,
-			// LazyLoadingEnabled:  false,
-			// Preferences:         preferences2.DefaultEC2Preferences,
 		}
 
 		log.Printf("OI instance: %s", oi.Name)

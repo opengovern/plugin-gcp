@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
@@ -23,7 +22,6 @@ func NewPlugin() *GCPPlugin {
 }
 
 func (p *GCPPlugin) GetConfig() golang.RegisterConfig {
-	log.Println("Get config")
 	return golang.RegisterConfig{
 		Name:     "kaytu-io/plugin-gcp",
 		Version:  version.VERSION,
@@ -44,6 +42,33 @@ func (p *GCPPlugin) GetConfig() golang.RegisterConfig {
 				LoginRequired:      true,
 			},
 		},
+		OverviewChart: &golang.ChartDefinition{
+
+			Columns: []*golang.ChartColumnItem{
+				{
+					Id:       "instance_name",
+					Name:     "Instance Name",
+					Width:    uint32(10),
+					Sortable: true,
+				},
+			},
+		},
+		DevicesChart: &golang.ChartDefinition{
+			Columns: []*golang.ChartColumnItem{
+				{
+					Id:       "instance_name",
+					Name:     "Instance Name",
+					Width:    uint32(10),
+					Sortable: true,
+				},
+				{
+					Id:       "project_id",
+					Name:     "Project ID",
+					Width:    uint32(10),
+					Sortable: true,
+				},
+			},
+		},
 	}
 }
 
@@ -61,10 +86,10 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 		},
 	)
 
-	publishOptimizationItem := func(item *golang.OptimizationItem) {
+	publishOptimizationItem := func(item *golang.ChartOptimizationItem) {
 		p.stream.Send(&golang.PluginMessage{
-			PluginMessage: &golang.PluginMessage_Oi{
-				Oi: item,
+			PluginMessage: &golang.PluginMessage_Coi{
+				Coi: item,
 			},
 		})
 	}
@@ -78,12 +103,22 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 			},
 		})
 	}
+
+	publishResultSummary := func(summary *golang.ResultSummary) {
+		p.stream.Send(&golang.PluginMessage{
+			PluginMessage: &golang.PluginMessage_Summary{
+				Summary: summary,
+			},
+		})
+	}
+
 	publishResultsReady(false)
 
 	if cmd == "compute-instance" {
 		p.processor = compute_instance.NewComputeInstanceProcessor(
 			gcpProvider,
 			publishOptimizationItem,
+			publishResultSummary,
 			kaytuAccessToken,
 			jobQueue,
 		)
