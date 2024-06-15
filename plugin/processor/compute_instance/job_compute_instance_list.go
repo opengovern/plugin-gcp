@@ -54,6 +54,7 @@ func (job *ListComputeInstancesJob) Run() error {
 			Skipped:             false,
 			LazyLoadingEnabled:  false,
 			SkipReason:          "NA",
+			Metrics:             nil,
 		}
 
 		log.Printf("OI instance: %s", oi.Name)
@@ -62,8 +63,9 @@ func (job *ListComputeInstancesJob) Run() error {
 		job.processor.publishOptimizationItem(oi.ToOptimizationItem())
 	}
 
-	if err = job.processor.provider.CloseClient(); err != nil {
-		return err
+	for _, instance := range instances {
+
+		job.processor.jobQueue.Push(NewGetComputeInstanceMetricsJob(job.processor, instance))
 	}
 
 	return nil

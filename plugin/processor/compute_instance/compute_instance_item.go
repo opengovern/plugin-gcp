@@ -1,7 +1,7 @@
 package compute_instance
 
 import (
-	"github.com/google/uuid"
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -16,39 +16,18 @@ type ComputeInstanceItem struct {
 	Skipped             bool
 	LazyLoadingEnabled  bool
 	SkipReason          string
+	Metrics             map[string][]*monitoringpb.Point
 	// Wastage             kaytu.EC2InstanceWastageResponse
 }
-
-// func (i ComputeInstanceItem) ToOptimizationItem() *golang.OptimizationItem {
-// 	oi := &golang.OptimizationItem{
-// 		Id:                 i.Id,
-// 		Name:               i.Name,
-// 		ResourceType:       i.MachineType,
-// 		Region:             i.Region,
-// 		Devices:            nil,
-// 		Preferences:        i.Preferences,
-// 		Description:        "description placeholder",
-// 		Loading:            i.OptimizationLoading,
-// 		Skipped:            i.Skipped,
-// 		SkipReason:         i.SkipReason,
-// 		LazyLoadingEnabled: i.LazyLoadingEnabled,
-// 	}
-
-// 	// if i.Instance.PlatformDetails != nil {
-// 	// 	oi.Platform = *i.Instance.PlatformDetails
-// 	// }
-// 	if oi.Name == "" {
-// 		oi.Name = string(i.Name)
-// 	}
-
-// 	return oi
-// }
 
 func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem {
 
 	chartrow := &golang.ChartRow{
-		RowId: uuid.New().String(),
+		RowId: i.Id,
 		Values: map[string]*golang.ChartRowItem{
+			"instance_id": {
+				Value: i.Id,
+			},
 			"instance_name": {
 				Value: i.Name,
 			},

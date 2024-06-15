@@ -46,6 +46,12 @@ func (p *GCPPlugin) GetConfig() golang.RegisterConfig {
 
 			Columns: []*golang.ChartColumnItem{
 				{
+					Id:       "instance_id",
+					Name:     "Instance ID",
+					Width:    uint32(10),
+					Sortable: true,
+				},
+				{
 					Id:       "instance_name",
 					Name:     "Instance Name",
 					Width:    uint32(10),
@@ -86,6 +92,12 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 		},
 	)
 
+	metricClient := gcp.NewCloudMonitoring(
+		[]string{
+			"https://www.googleapis.com/auth/monitoring.read",
+		},
+	)
+
 	publishOptimizationItem := func(item *golang.ChartOptimizationItem) {
 		p.stream.Send(&golang.PluginMessage{
 			PluginMessage: &golang.PluginMessage_Coi{
@@ -117,6 +129,7 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 	if cmd == "compute-instance" {
 		p.processor = compute_instance.NewComputeInstanceProcessor(
 			gcpProvider,
+			metricClient,
 			publishOptimizationItem,
 			publishResultSummary,
 			kaytuAccessToken,
