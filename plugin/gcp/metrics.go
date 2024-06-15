@@ -75,15 +75,15 @@ func (c *CloudMonitoring) NewInstanceMetricRequest(
 	return request
 }
 
-func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest) *monitoringpb.TimeSeries {
+func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest) (*monitoringpb.TimeSeries, error) {
 
 	it := c.client.ListTimeSeries(context.Background(), request)
 
 	resp, err := it.Next()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return resp
+	return resp, err
 
 }

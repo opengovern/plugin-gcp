@@ -41,7 +41,10 @@ func TestGetMetrics(t *testing.T) {
 	)
 
 	// execute the request
-	resp := metric.GetMetric(request)
+	resp, err := metric.GetMetric(request)
+	if err != nil {
+		t.Error(err)
+	}
 
 	log.Printf("metrics: %s", resp.GetMetric().String())
 	log.Printf("resource: %s", resp.GetResource().String())
