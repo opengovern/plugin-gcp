@@ -1,7 +1,6 @@
 package compute_instance
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"strconv"
@@ -10,6 +9,8 @@ import (
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/kaytu-io/plugin-gcp/plugin/preferences"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type GetComputeInstanceMetricsJob struct {
@@ -35,20 +36,25 @@ func (job *GetComputeInstanceMetricsJob) Description() string {
 
 func (job *GetComputeInstanceMetricsJob) Run() error {
 
-	err := job.processor.metricProvider.InitializeClient(context.Background())
-	if err != nil {
-		return err
-	}
+	endTime := time.Now()
+	startTime := endTime.Add(-24 * 1 * time.Hour)
 
-	endtime := time.Now()
-	starttime := endtime.Add(-24 * 1 * time.Hour)
-
-	cpuRequest := job.processor.metricProvider.NewInstanceMetricRequest(
-		"compute.googleapis.com/instance/cpu/utilization",
-		fmt.Sprint(job.instance.GetId()),
-		starttime,
-		endtime,
-		60, // 1 minute
+	cpuRequest := job.processor.metricProvider.NewTimeSeriesRequest(
+		fmt.Sprintf(
+			`metric.type="%s" AND resource.labels.instance_id="%s"`,
+			"compute.googleapis.com/instance/cpu/utilization",
+			fmt.Sprint(job.instance.GetId()),
+		),
+		&monitoringpb.TimeInterval{
+			EndTime:   timestamppb.New(endTime),
+			StartTime: timestamppb.New(startTime),
+		},
+		&monitoringpb.Aggregation{
+			AlignmentPeriod: &durationpb.Duration{
+				Seconds: 60,
+			},
+			PerSeriesAligner: monitoringpb.Aggregation_ALIGN_MEAN, // will represent all the datapoints in the above period, with a mean
+		},
 	)
 
 	cpumetric, err := job.processor.metricProvider.GetMetric(cpuRequest)
@@ -56,12 +62,22 @@ func (job *GetComputeInstanceMetricsJob) Run() error {
 		return err
 	}
 
-	memoryRequest := job.processor.metricProvider.NewInstanceMetricRequest(
-		"compute.googleapis.com/instance/cpu/utilization",
-		fmt.Sprint(job.instance.GetId()),
-		starttime,
-		endtime,
-		60, // 1 minute
+	memoryRequest := job.processor.metricProvider.NewTimeSeriesRequest(
+		fmt.Sprintf(
+			`metric.type="%s" AND resource.labels.instance_id="%s"`,
+			"compute.googleapis.com/instance/memory/balloon/ram_used",
+			fmt.Sprint(job.instance.GetId()),
+		),
+		&monitoringpb.TimeInterval{
+			EndTime:   timestamppb.New(endTime),
+			StartTime: timestamppb.New(startTime),
+		},
+		&monitoringpb.Aggregation{
+			AlignmentPeriod: &durationpb.Duration{
+				Seconds: 60,
+			},
+			PerSeriesAligner: monitoringpb.Aggregation_ALIGN_MEAN, // will represent all the datapoints in the above period, with a mean
+		},
 	)
 
 	memoryMetric, err := job.processor.metricProvider.GetMetric(memoryRequest)

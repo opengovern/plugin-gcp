@@ -28,6 +28,7 @@ func NewComputeInstanceProcessor(
 	kaytuAcccessToken string,
 	jobQueue *sdk.JobQueue,
 ) *ComputeInstanceProcessor {
+	log.Println("creating processor")
 	r := &ComputeInstanceProcessor{
 		provider:       prv,
 		metricProvider: metricPrv,
@@ -40,7 +41,6 @@ func NewComputeInstanceProcessor(
 		// configuration:           configurations,
 		// lazyloadCounter:         lazyloadCounter,
 	}
-	log.Println("creating processor")
 
 	jobQueue.Push(NewListComputeInstancesJob(r))
 	return r

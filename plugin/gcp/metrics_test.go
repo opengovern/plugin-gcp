@@ -33,7 +33,7 @@ func TestGetMetrics(t *testing.T) {
 
 	// creating the metric request for the instance
 	request := metric.NewInstanceMetricRequest(
-		"compute.googleapis.com/instance/cpu/utilization",
+		"compute.googleapis.com/instance/memory/balloon/ram_used",
 		id,
 		starttime,
 		endtime,
@@ -49,9 +49,11 @@ func TestGetMetrics(t *testing.T) {
 	log.Printf("metrics: %s", resp.GetMetric().String())
 	log.Printf("resource: %s", resp.GetResource().String())
 	log.Printf("# of points: %d", len(resp.Points))
+	log.Println(resp.Unit)
+	log.Printf("Point 1 : %.0f %s", resp.GetPoints()[0].GetValue().GetDoubleValue(), resp.GetUnit())
 
 	// for _, point := range resp.Points {
-	// 	log.Printf("Point : %.10f", point.GetValue().GetDoubleValue())
+	// 	log.Printf("Point : %.0f", point.GetValue().GetDoubleValue())
 	// }
 
 	metric.CloseClient()

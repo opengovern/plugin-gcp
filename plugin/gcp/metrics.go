@@ -44,6 +44,22 @@ func (c *CloudMonitoring) CloseClient() error {
 	return nil
 }
 
+func (c *CloudMonitoring) NewTimeSeriesRequest(
+	filter string, // filter for time series metric, containing metric name and resource label
+	interval *monitoringpb.TimeInterval, // interval containing start and end time of the requested time series
+	aggregation *monitoringpb.Aggregation, // operations to perform on time series data before returning
+) *monitoringpb.ListTimeSeriesRequest {
+
+	return &monitoringpb.ListTimeSeriesRequest{
+		Name:        fmt.Sprintf("projects/%s", c.ProjectID),
+		Filter:      filter,
+		Interval:    interval,
+		Aggregation: aggregation,
+		View:        monitoringpb.ListTimeSeriesRequest_FULL,
+	}
+
+}
+
 func (c *CloudMonitoring) NewInstanceMetricRequest(
 	metricName string, // fully qualified name of the metric
 	instanceID string, // compute instance ID
@@ -73,6 +89,7 @@ func (c *CloudMonitoring) NewInstanceMetricRequest(
 	}
 
 	return request
+
 }
 
 func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest) (*monitoringpb.TimeSeries, error) {

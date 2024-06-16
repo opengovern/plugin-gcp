@@ -1,7 +1,6 @@
 package compute_instance
 
 import (
-	"context"
 	"log"
 	"strconv"
 
@@ -30,11 +29,6 @@ func (job *ListComputeInstancesJob) Description() string {
 func (job *ListComputeInstancesJob) Run() error {
 
 	log.Println("Running list compute instance job")
-
-	err := job.processor.provider.InitializeClient(context.Background())
-	if err != nil {
-		return err
-	}
 
 	instances, err := job.processor.provider.GetAllInstances()
 	if err != nil {

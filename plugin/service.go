@@ -1,7 +1,9 @@
 package plugin
 
 import (
+	"context"
 	"fmt"
+	"log"
 
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
@@ -97,6 +99,18 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 			"https://www.googleapis.com/auth/monitoring.read",
 		},
 	)
+
+	log.Println("Initializing clients")
+
+	err := gcpProvider.InitializeClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	err = metricClient.InitializeClient(context.Background())
+	if err != nil {
+		return err
+	}
 
 	publishOptimizationItem := func(item *golang.ChartOptimizationItem) {
 		p.stream.Send(&golang.PluginMessage{
