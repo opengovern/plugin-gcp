@@ -3,6 +3,8 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
+	"google.golang.org/api/iterator"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
@@ -57,15 +59,35 @@ func (c *CloudMonitoring) NewTimeSeriesRequest(
 
 }
 
-func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest) (*monitoringpb.TimeSeries, error) {
+func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest) ([]kaytu.Datapoint, error) {
+	var dps []kaytu.Datapoint
 
 	it := c.client.ListTimeSeries(context.Background(), request)
+	for {
+		resp, err := it.Next()
 
-	resp, err := it.Next()
-	if err != nil {
-		return nil, err
+		if err != nil {
+			if err == iterator.Done {
+				break
+			} else {
+				return nil, err
+			}
+		}
+		dps = append(dps, convertDatapoints(resp)...)
 	}
 
-	return resp, err
+	return dps, nil
 
+}
+
+func convertDatapoints(resp *monitoringpb.TimeSeries) []kaytu.Datapoint {
+	var dps []kaytu.Datapoint
+	for _, dp := range resp.GetPoints() {
+		dps = append(dps, kaytu.Datapoint{
+			Value:     dp.GetValue().GetDoubleValue(),
+			StartTime: dp.GetInterval().GetStartTime().AsTime(),
+			EndTime:   dp.GetInterval().GetEndTime().AsTime(),
+		})
+	}
+	return dps
 }

@@ -2,6 +2,7 @@ package compute_instance
 
 import (
 	"fmt"
+	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
 	"log"
 	"strconv"
 	"time"
@@ -91,10 +92,10 @@ func (job *GetComputeInstanceMetricsJob) Run() error {
 		return err
 	}
 
-	instanceMetrics := make(map[string][]*monitoringpb.Point)
+	instanceMetrics := make(map[string][]kaytu.Datapoint)
 
-	instanceMetrics["cpuUtilization"] = cpumetric.GetPoints()
-	instanceMetrics["memoryUtilization"] = memoryMetric.GetPoints()
+	instanceMetrics["cpuUtilization"] = cpumetric
+	instanceMetrics["memoryUtilization"] = memoryMetric
 
 	oi := ComputeInstanceItem{
 		Name:                *job.instance.Name,

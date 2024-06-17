@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"maps"
 
-	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/utils"
 	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
@@ -21,7 +20,7 @@ type ComputeInstanceItem struct {
 	Skipped             bool
 	LazyLoadingEnabled  bool
 	SkipReason          string
-	Metrics             map[string][]*monitoringpb.Point
+	Metrics             map[string][]kaytu.Datapoint
 	Wastage             kaytu.GcpComputeInstanceWastageResponse
 }
 
