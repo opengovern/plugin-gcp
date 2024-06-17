@@ -10,9 +10,8 @@ import (
 )
 
 type ComputeInstanceProcessor struct {
-	provider       *gcp.Compute
-	metricProvider *gcp.CloudMonitoring
-	// identification          map[string]string
+	provider                *gcp.Compute
+	metricProvider          *gcp.CloudMonitoring
 	items                   util.ConcurrentMap[string, ComputeInstanceItem]
 	publishOptimizationItem func(item *golang.ChartOptimizationItem)
 	publishResultSummary    func(summary *golang.ResultSummary)
@@ -30,9 +29,8 @@ func NewComputeInstanceProcessor(
 ) *ComputeInstanceProcessor {
 	log.Println("creating processor")
 	r := &ComputeInstanceProcessor{
-		provider:       prv,
-		metricProvider: metricPrv,
-		// identification: identification,
+		provider:                prv,
+		metricProvider:          metricPrv,
 		items:                   util.NewMap[string, ComputeInstanceItem](),
 		publishOptimizationItem: publishOptimizationItem,
 		publishResultSummary:    publishResultSummary,
