@@ -21,7 +21,9 @@ func NewGCP(scopes []string) GCP {
 }
 
 func (g *GCP) GetCredentials(ctx context.Context) error {
-	credentials, err := google.FindDefaultCredentials(
+	var err error
+
+	g.credentials, err = google.FindDefaultCredentials(
 		ctx,
 		g.Scopes...,
 	)
@@ -29,9 +31,16 @@ func (g *GCP) GetCredentials(ctx context.Context) error {
 		return err
 	}
 
-	json.Unmarshal(credentials.JSON, g) //this will store project id from credentials
+	json.Unmarshal(g.credentials.JSON, g) //this will store project id from credentials
 
-	g.credentials = credentials
-	// log.Println(g.ProjectID)
 	return nil
+}
+
+func (g *GCP) Identify() map[string]string {
+
+	identification := map[string]string{
+		"project_id": g.ProjectID,
+	}
+
+	return identification
 }
