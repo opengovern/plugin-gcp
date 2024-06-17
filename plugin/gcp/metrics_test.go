@@ -2,10 +2,15 @@ package gcp
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"testing"
 	"time"
+
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // run this test as
@@ -15,8 +20,8 @@ func TestGetMetrics(t *testing.T) {
 
 	//test variables
 	id := os.Getenv("TEST_INSTANCE_ID")
-	endtime := time.Now()
-	starttime := endtime.Add(-24 * 1 * time.Hour) // 24 hours before current time
+	endTime := time.Now()
+	startTime := endTime.Add(-24 * 1 * time.Hour) // 24 hours before current time
 
 	log.Printf("running %s", t.Name())
 
@@ -32,16 +37,26 @@ func TestGetMetrics(t *testing.T) {
 	}
 
 	// creating the metric request for the instance
-	request := metric.NewInstanceMetricRequest(
-		"compute.googleapis.com/instance/memory/balloon/ram_used",
-		id,
-		starttime,
-		endtime,
-		60,
+	memoryRequest := metric.NewTimeSeriesRequest(
+		fmt.Sprintf(
+			`metric.type="%s" AND resource.labels.instance_id="%s"`,
+			"compute.googleapis.com/instance/memory/balloon/ram_used",
+			id,
+		),
+		&monitoringpb.TimeInterval{
+			EndTime:   timestamppb.New(endTime),
+			StartTime: timestamppb.New(startTime),
+		},
+		&monitoringpb.Aggregation{
+			AlignmentPeriod: &durationpb.Duration{
+				Seconds: 60,
+			},
+			PerSeriesAligner: monitoringpb.Aggregation_ALIGN_NONE, // will represent all the datapoints in the above period, with a mean
+		},
 	)
 
 	// execute the request
-	resp, err := metric.GetMetric(request)
+	resp, err := metric.GetMetric(memoryRequest)
 	if err != nil {
 		t.Error(err)
 	}
