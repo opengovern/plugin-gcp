@@ -9,6 +9,7 @@ import (
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/kaytu-io/plugin-gcp/plugin/preferences"
+	util "github.com/kaytu-io/plugin-gcp/utils"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -26,31 +27,36 @@ func NewGetComputeInstanceMetricsJob(processor *ComputeInstanceProcessor, instan
 }
 
 func (job *GetComputeInstanceMetricsJob) Id() string {
-	return "get_compute_instance_metrics"
+	return fmt.Sprintf("get_compute_instance_metrics_%d", job.instance.GetId())
 }
 
 func (job *GetComputeInstanceMetricsJob) Description() string {
-	return "Get metrics for the specified compute instance"
+	return fmt.Sprintf("Get metrics for compute instance: %d", job.instance.GetId())
 
 }
 
 func (job *GetComputeInstanceMetricsJob) Run() error {
 
-	endTime := time.Now()
-	startTime := endTime.Add(-24 * 1 * time.Hour)
+	endTime := time.Now()                         // end time of requested time series
+	startTime := endTime.Add(-24 * 1 * time.Hour) // start time of requested time series
 
+	// metricName string,
+	// instanceID string,
+	// startTime time.Time,
+	// endTime time.Time,
+	// periodInSeconds int64,
 	cpuRequest := job.processor.metricProvider.NewTimeSeriesRequest(
 		fmt.Sprintf(
 			`metric.type="%s" AND resource.labels.instance_id="%s"`,
-			"compute.googleapis.com/instance/cpu/utilization",
-			fmt.Sprint(job.instance.GetId()),
+			"compute.googleapis.com/instance/cpu/utilization", // fully qualified name of the metric
+			fmt.Sprint(job.instance.GetId()),                  // compute instance ID
 		),
 		&monitoringpb.TimeInterval{
 			EndTime:   timestamppb.New(endTime),
 			StartTime: timestamppb.New(startTime),
 		},
 		&monitoringpb.Aggregation{
-			AlignmentPeriod: &durationpb.Duration{
+			AlignmentPeriod: &durationpb.Duration{ // period, for which the datapoints will be aggregated into one, in seconds
 				Seconds: 60,
 			},
 			PerSeriesAligner: monitoringpb.Aggregation_ALIGN_MEAN, // will represent all the datapoints in the above period, with a mean
@@ -93,8 +99,8 @@ func (job *GetComputeInstanceMetricsJob) Run() error {
 	oi := ComputeInstanceItem{
 		Name:                *job.instance.Name,
 		Id:                  strconv.FormatUint(job.instance.GetId(), 10),
-		MachineType:         job.instance.GetMachineType(),
-		Region:              job.instance.GetZone(),
+		MachineType:         util.TrimmedString(*job.instance.MachineType, "/"),
+		Region:              util.TrimmedString(*job.instance.Zone, "/"),
 		OptimizationLoading: false,
 		Preferences:         preferences.DefaultComputeEnginePreferences,
 		Skipped:             false,
@@ -109,6 +115,8 @@ func (job *GetComputeInstanceMetricsJob) Run() error {
 
 	job.processor.items.Set(oi.Id, oi)
 	job.processor.publishOptimizationItem(oi.ToOptimizationItem())
+
+	job.processor.jobQueue.Push(NewOptimizeComputeInstancesJob(job.processor, oi))
 
 	return nil
 

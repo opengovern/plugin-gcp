@@ -5,7 +5,6 @@ go 1.21.5
 require (
 	cloud.google.com/go/compute v1.25.1
 	cloud.google.com/go/monitoring v1.18.0
-	github.com/aws/aws-sdk-go-v2/service/cloudwatch v1.38.6
 	github.com/google/uuid v1.6.0
 	github.com/kaytu-io/kaytu v0.10.5
 	golang.org/x/oauth2 v0.21.0
@@ -15,7 +14,6 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
-	github.com/aws/smithy-go v1.20.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
