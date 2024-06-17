@@ -1,8 +1,13 @@
 package compute_instance
 
 import (
+	"fmt"
+	"maps"
+
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
+	"github.com/kaytu-io/kaytu/pkg/utils"
+	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -17,10 +22,78 @@ type ComputeInstanceItem struct {
 	LazyLoadingEnabled  bool
 	SkipReason          string
 	Metrics             map[string][]*monitoringpb.Point
-	// Wastage             kaytu.EC2InstanceWastageResponse
+	Wastage             kaytu.GcpComputeInstanceWastageResponse
+}
+
+func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[string]*golang.Properties) {
+	row := golang.ChartRow{
+		RowId:  i.Id,
+		Values: make(map[string]*golang.ChartRowItem),
+	}
+	row.RowId = i.Id
+
+	row.Values["resource_id"] = &golang.ChartRowItem{
+		Value: i.Id,
+	}
+	row.Values["resource_name"] = &golang.ChartRowItem{
+		Value: i.Name,
+	}
+	row.Values["resource_type"] = &golang.ChartRowItem{
+		Value: "Compute Instance",
+	}
+
+	row.Values["current_cost"] = &golang.ChartRowItem{
+		Value: utils.FormatPriceFloat(i.Wastage.RightSizing.Current.Cost),
+	}
+
+	regionProperty := &golang.Property{
+		Key:     "Zone",
+		Current: i.Wastage.RightSizing.Current.Zone,
+	}
+
+	MachineTypeProperty := &golang.Property{
+		Key:     "Machine Type",
+		Current: i.Wastage.RightSizing.Current.MachineType,
+	}
+
+	memoryProperty := &golang.Property{
+		Key:     "  Memory",
+		Current: fmt.Sprintf("%d MB", i.Wastage.RightSizing.Current.MemoryMb),
+		Average: utils.Percentage(i.Wastage.RightSizing.Memory.Avg),
+		Max:     utils.Percentage(i.Wastage.RightSizing.Memory.Max),
+	}
+
+	props := make(map[string]*golang.Properties)
+	properties := &golang.Properties{}
+
+	properties.Properties = append(properties.Properties, regionProperty)
+	properties.Properties = append(properties.Properties, MachineTypeProperty)
+	properties.Properties = append(properties.Properties, &golang.Property{
+		Key: "Compute",
+	})
+	properties.Properties = append(properties.Properties, memoryProperty)
+
+	props[i.Id] = properties
+
+	return &row, props
+}
+
+func (i ComputeInstanceItem) Devices() ([]*golang.ChartRow, map[string]*golang.Properties) {
+
+	var deviceRows []*golang.ChartRow
+	deviceProps := make(map[string]*golang.Properties)
+
+	instanceRows, instanceProps := i.ComputeInstanceDevice()
+
+	deviceRows = append(deviceRows, instanceRows)
+	maps.Copy(deviceProps, instanceProps)
+
+	return deviceRows, deviceProps
 }
 
 func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem {
+
+	deviceRows, deviceProps := i.Devices()
 
 	chartrow := &golang.ChartRow{
 		RowId: i.Id,
@@ -34,13 +107,10 @@ func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem 
 		},
 	}
 
-	oi := &golang.ChartOptimizationItem{
-		OverviewChartRow: chartrow,
-		// Id:                 i.Id,
-		// Name:               i.Name,
-		// ResourceType:       i.MachineType,
-		// Region:             i.Region,
-		// Devices:            nil,
+	coi := &golang.ChartOptimizationItem{
+		OverviewChartRow:   chartrow,
+		DevicesChartRows:   deviceRows,
+		DevicesProperties:  deviceProps,
 		Preferences:        i.Preferences,
 		Description:        "description placeholder",
 		Loading:            i.OptimizationLoading,
@@ -49,12 +119,5 @@ func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem 
 		LazyLoadingEnabled: i.LazyLoadingEnabled,
 	}
 
-	// if i.Instance.PlatformDetails != nil {
-	// 	oi.Platform = *i.Instance.PlatformDetails
-	// }
-	// if oi.Name == "" {
-	// 	oi.Name = string(i.Name)
-	// }
-
-	return oi
+	return coi
 }
