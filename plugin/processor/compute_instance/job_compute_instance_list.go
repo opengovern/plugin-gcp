@@ -1,6 +1,7 @@
 package compute_instance
 
 import (
+	"context"
 	"log"
 	"strconv"
 
@@ -26,7 +27,7 @@ func (job *ListComputeInstancesJob) Description() string {
 
 }
 
-func (job *ListComputeInstancesJob) Run() error {
+func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 
 	log.Println("Running list compute instance job")
 

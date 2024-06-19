@@ -1,6 +1,7 @@
 package compute_instance
 
 import (
+	"context"
 	"fmt"
 	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
 	"log"
@@ -36,7 +37,7 @@ func (job *GetComputeInstanceMetricsJob) Description() string {
 
 }
 
-func (job *GetComputeInstanceMetricsJob) Run() error {
+func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 
 	endTime := time.Now()                         // end time of requested time series
 	startTime := endTime.Add(-24 * 1 * time.Hour) // start time of requested time series

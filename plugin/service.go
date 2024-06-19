@@ -15,7 +15,7 @@ import (
 )
 
 type GCPPlugin struct {
-	stream    golang.Plugin_RegisterClient
+	stream    *sdk.StreamController
 	processor processor.PluginProcessor
 }
 
@@ -80,7 +80,7 @@ func (p *GCPPlugin) GetConfig() golang.RegisterConfig {
 	}
 }
 
-func (p *GCPPlugin) SetStream(stream golang.Plugin_RegisterClient) {
+func (p *GCPPlugin) SetStream(stream *sdk.StreamController) {
 	p.stream = stream
 }
 
@@ -152,7 +152,7 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 	} else {
 		return fmt.Errorf("invalid command: %s", cmd)
 	}
-	jobQueue.SetOnFinish(func() {
+	jobQueue.SetOnFinish(func(ctx context.Context) {
 		publishResultsReady(true)
 	})
 
@@ -161,4 +161,8 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 
 func (p *GCPPlugin) ReEvaluate(evaluate *golang.ReEvaluate) {
 	p.processor.ReEvaluate(evaluate.Id, evaluate.Preferences)
+}
+
+func (p *GCPPlugin) ExportNonInteractive() *golang.NonInteractiveExport {
+	return nil
 }

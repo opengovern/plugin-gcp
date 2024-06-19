@@ -1,6 +1,7 @@
 package compute_instance
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -31,7 +32,7 @@ func (job *OptimizeComputeInstancesJob) Description() string {
 
 }
 
-func (job *OptimizeComputeInstancesJob) Run() error {
+func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 
 	requestId := uuid.NewString()
 

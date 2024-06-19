@@ -51,3 +51,7 @@ func (m *ComputeInstanceProcessor) ReEvaluate(id string, items []*golang.Prefere
 	// m.items.Set(id, v)
 	// m.jobQueue.Push(NewOptimizeEC2InstanceJob(m, v))
 }
+
+func (p *ComputeInstanceProcessor) ExportNonInteractive() *golang.NonInteractiveExport {
+	return nil
+}
