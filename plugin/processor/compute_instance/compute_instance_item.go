@@ -15,6 +15,7 @@ type ComputeInstanceItem struct {
 	Id                  string
 	MachineType         string
 	Region              string
+	Platform            string
 	OptimizationLoading bool
 	Preferences         []*golang.PreferenceItem
 	Skipped             bool
@@ -60,7 +61,7 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 	}
 	CPUProperty := &golang.Property{
 		Key:     "  CPU",
-		Current: i.Wastage.RightSizing.Current.MachineType,
+		Current: fmt.Sprintf("%d", i.Wastage.RightSizing.Current.CPU),
 	}
 
 	memoryProperty := &golang.Property{
@@ -84,7 +85,7 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 		ZoneProperty.Recommended = i.Wastage.RightSizing.Recommended.Zone
 		MachineTypeProperty.Recommended = i.Wastage.RightSizing.Recommended.MachineType
 		CPUProperty.Recommended = fmt.Sprintf("%d", i.Wastage.RightSizing.Recommended.CPU)
-		memoryProperty.Recommended = fmt.Sprintf("%d GiB", i.Wastage.RightSizing.Recommended.MemoryMb)
+		memoryProperty.Recommended = fmt.Sprintf("%d MB", i.Wastage.RightSizing.Recommended.MemoryMb)
 	}
 
 	props := make(map[string]*golang.Properties)
@@ -136,10 +137,13 @@ func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem 
 			"resource_type": {
 				Value: i.MachineType,
 			},
-			"Region": {
+			"region": {
 				Value: i.Region,
 			},
-			"Total Savings": {
+			"platform": {
+				Value: i.Platform,
+			},
+			"total_saving": {
 				Value: i.Region,
 			},
 		},

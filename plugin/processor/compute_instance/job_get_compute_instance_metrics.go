@@ -3,10 +3,11 @@ package compute_instance
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
 	"log"
 	"strconv"
 	"time"
+
+	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
@@ -103,6 +104,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		Id:                  strconv.FormatUint(job.instance.GetId(), 10),
 		MachineType:         util.TrimmedString(*job.instance.MachineType, "/"),
 		Region:              util.TrimmedString(*job.instance.Zone, "/"),
+		Platform:            job.instance.GetCpuPlatform(),
 		OptimizationLoading: false,
 		Preferences:         preferences.DefaultComputeEnginePreferences,
 		Skipped:             false,

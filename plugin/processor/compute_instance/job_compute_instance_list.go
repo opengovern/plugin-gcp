@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/kaytu-io/plugin-gcp/plugin/preferences"
+	util "github.com/kaytu-io/plugin-gcp/utils"
 )
 
 type ListComputeInstancesJob struct {
@@ -42,8 +43,9 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 		oi := ComputeInstanceItem{
 			Name:                *instance.Name,
 			Id:                  strconv.FormatUint(instance.GetId(), 10),
-			MachineType:         instance.GetMachineType(),
-			Region:              instance.GetZone(),
+			MachineType:         util.TrimmedString(*instance.MachineType, "/"),
+			Region:              util.TrimmedString(*instance.Zone, "/"),
+			Platform:            instance.GetCpuPlatform(),
 			OptimizationLoading: false,
 			Preferences:         preferences.DefaultComputeEnginePreferences,
 			Skipped:             false,

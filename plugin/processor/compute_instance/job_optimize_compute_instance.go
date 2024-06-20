@@ -61,6 +61,7 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 		Id:                  job.item.Id,
 		MachineType:         job.item.MachineType,
 		Region:              job.item.Region,
+		Platform:            job.item.Platform,
 		OptimizationLoading: false,
 		Preferences:         job.item.Preferences,
 		Skipped:             false,
