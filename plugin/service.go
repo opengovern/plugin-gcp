@@ -48,32 +48,73 @@ func (p *GCPPlugin) GetConfig() golang.RegisterConfig {
 
 			Columns: []*golang.ChartColumnItem{
 				{
-					Id:       "instance_id",
-					Name:     "Instance ID",
-					Width:    uint32(10),
-					Sortable: true,
+					Id:    "resource_id",
+					Name:  "Resource ID",
+					Width: uint32(10),
 				},
 				{
-					Id:       "instance_name",
-					Name:     "Instance Name",
-					Width:    uint32(10),
-					Sortable: true,
+					Id:    "resource_name",
+					Name:  "Resource Name",
+					Width: uint32(10),
+				},
+				{
+					Id:    "region",
+					Name:  "Region",
+					Width: uint32(15),
+				},
+				{
+					Id:    "platform",
+					Name:  "Platform",
+					Width: uint32(15),
+				},
+				{
+					Id:    "total_saving",
+					Name:  "Total Saving (Monthly)",
+					Width: uint32(40),
+				},
+				{
+					Id:    "x_kaytu_right_arrow",
+					Name:  "",
+					Width: uint32(1),
 				},
 			},
 		},
 		DevicesChart: &golang.ChartDefinition{
 			Columns: []*golang.ChartColumnItem{
 				{
-					Id:       "instance_name",
-					Name:     "Instance Name",
-					Width:    uint32(10),
-					Sortable: true,
+					Id:    "resource_id",
+					Name:  "Resource ID",
+					Width: uint32(10),
 				},
 				{
-					Id:       "project_id",
-					Name:     "Project ID",
-					Width:    uint32(10),
-					Sortable: true,
+					Id:    "resource_name",
+					Name:  "Resource Name",
+					Width: uint32(10),
+				},
+				{
+					Id:    "resource_type",
+					Name:  "Resource Type",
+					Width: uint32(10),
+				},
+				{
+					Id:    "project_id",
+					Name:  "Project ID",
+					Width: uint32(10),
+				},
+				{
+					Id:    "current_cost",
+					Name:  "Current Cost",
+					Width: uint32(20),
+				},
+				{
+					Id:    "right_sized_cost",
+					Name:  "Right sized Cost",
+					Width: 20,
+				},
+				{
+					Id:    "savings",
+					Name:  "Savings",
+					Width: 20,
 				},
 			},
 		},

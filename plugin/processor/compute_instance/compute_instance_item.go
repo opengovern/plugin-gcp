@@ -45,7 +45,7 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 		Value: utils.FormatPriceFloat(i.Wastage.RightSizing.Current.Cost),
 	}
 
-	regionProperty := &golang.Property{
+	ZoneProperty := &golang.Property{
 		Key:     "Zone",
 		Current: i.Wastage.RightSizing.Current.Zone,
 	}
@@ -54,22 +54,49 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 		Key:     "Machine Type",
 		Current: i.Wastage.RightSizing.Current.MachineType,
 	}
+	MachineFamilyProperty := &golang.Property{
+		Key:     "Machine Family",
+		Current: i.Wastage.RightSizing.Current.MachineFamily,
+	}
+	CPUProperty := &golang.Property{
+		Key:     "  CPU",
+		Current: i.Wastage.RightSizing.Current.MachineType,
+	}
 
 	memoryProperty := &golang.Property{
-		Key:     "  Memory",
+		Key:     "  MemoryMB",
 		Current: fmt.Sprintf("%d MB", i.Wastage.RightSizing.Current.MemoryMb),
 		Average: utils.Percentage(i.Wastage.RightSizing.Memory.Avg),
 		Max:     utils.Percentage(i.Wastage.RightSizing.Memory.Max),
 	}
 
+	row.Values["current_cost"] = &golang.ChartRowItem{
+		Value: utils.FormatPriceFloat(i.Wastage.RightSizing.Current.Cost),
+	}
+
+	if i.Wastage.RightSizing.Recommended != nil {
+		row.Values["right_sized_cost"] = &golang.ChartRowItem{
+			Value: utils.FormatPriceFloat(i.Wastage.RightSizing.Recommended.Cost),
+		}
+		row.Values["savings"] = &golang.ChartRowItem{
+			Value: utils.FormatPriceFloat(i.Wastage.RightSizing.Current.Cost - i.Wastage.RightSizing.Recommended.Cost),
+		}
+		ZoneProperty.Recommended = i.Wastage.RightSizing.Recommended.Zone
+		MachineTypeProperty.Recommended = i.Wastage.RightSizing.Recommended.MachineType
+		CPUProperty.Recommended = fmt.Sprintf("%d", i.Wastage.RightSizing.Recommended.CPU)
+		memoryProperty.Recommended = fmt.Sprintf("%d GiB", i.Wastage.RightSizing.Recommended.MemoryMb)
+	}
+
 	props := make(map[string]*golang.Properties)
 	properties := &golang.Properties{}
 
-	properties.Properties = append(properties.Properties, regionProperty)
+	properties.Properties = append(properties.Properties, ZoneProperty)
 	properties.Properties = append(properties.Properties, MachineTypeProperty)
+	properties.Properties = append(properties.Properties, MachineFamilyProperty)
 	properties.Properties = append(properties.Properties, &golang.Property{
 		Key: "Compute",
 	})
+	properties.Properties = append(properties.Properties, CPUProperty)
 	properties.Properties = append(properties.Properties, memoryProperty)
 
 	props[i.Id] = properties
@@ -97,11 +124,23 @@ func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem 
 	chartrow := &golang.ChartRow{
 		RowId: i.Id,
 		Values: map[string]*golang.ChartRowItem{
-			"instance_id": {
+			"x_kaytu_right_arrow": {
+				Value: "→",
+			},
+			"resource_id": {
 				Value: i.Id,
 			},
-			"instance_name": {
+			"resource_name": {
 				Value: i.Name,
+			},
+			"resource_type": {
+				Value: i.MachineType,
+			},
+			"Region": {
+				Value: i.Region,
+			},
+			"Total Savings": {
+				Value: i.Region,
 			},
 		},
 	}
