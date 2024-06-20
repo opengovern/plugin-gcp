@@ -3,7 +3,6 @@ package gcp
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -23,7 +22,7 @@ func TestGetMetrics(t *testing.T) {
 	endTime := time.Now()
 	startTime := endTime.Add(-24 * 1 * time.Hour) // 24 hours before current time
 
-	log.Printf("running %s", t.Name())
+	t.Logf("running %s", t.Name())
 
 	// creating and initializing client
 	metric := NewCloudMonitoring(
@@ -61,11 +60,11 @@ func TestGetMetrics(t *testing.T) {
 		t.Error(err)
 	}
 
-	log.Printf("metrics: %s", resp.GetMetric().String())
-	log.Printf("resource: %s", resp.GetResource().String())
-	log.Printf("# of points: %d", len(resp.Points))
-	log.Println(resp.Unit)
-	log.Printf("Point 1 : %.0f %s", resp.GetPoints()[0].GetValue().GetDoubleValue(), resp.GetUnit())
+	// log.Printf("metrics: %s", resp.GetMetric().String())
+	// log.Printf("resource: %s", resp.GetResource().String())
+	t.Logf("datapoints: %d", len(resp))
+	// log.Println(resp.Unit)
+	// log.Printf("Point 1 : %.0f %s", resp.GetPoints()[0].GetValue().GetDoubleValue(), resp.GetUnit())
 
 	// for _, point := range resp.Points {
 	// 	log.Printf("Point : %.0f", point.GetValue().GetDoubleValue())
