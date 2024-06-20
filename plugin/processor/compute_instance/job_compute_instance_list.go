@@ -41,6 +41,7 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 
 	for _, instance := range instances {
 		oi := ComputeInstanceItem{
+			ProjectId:           job.processor.provider.ProjectID,
 			Name:                *instance.Name,
 			Id:                  strconv.FormatUint(instance.GetId(), 10),
 			MachineType:         util.TrimmedString(*instance.MachineType, "/"),

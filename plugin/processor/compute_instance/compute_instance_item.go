@@ -11,6 +11,7 @@ import (
 )
 
 type ComputeInstanceItem struct {
+	ProjectId           string
 	Name                string
 	Id                  string
 	MachineType         string
@@ -69,6 +70,10 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 		Current: fmt.Sprintf("%d MB", i.Wastage.RightSizing.Current.MemoryMb),
 		Average: utils.Percentage(i.Wastage.RightSizing.Memory.Avg),
 		Max:     utils.Percentage(i.Wastage.RightSizing.Memory.Max),
+	}
+
+	row.Values["project_id"] = &golang.ChartRowItem{
+		Value: i.ProjectId,
 	}
 
 	row.Values["current_cost"] = &golang.ChartRowItem{

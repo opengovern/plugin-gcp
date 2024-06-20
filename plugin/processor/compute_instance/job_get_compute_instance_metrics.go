@@ -100,6 +100,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 	instanceMetrics["memoryUtilization"] = memoryMetric
 
 	oi := ComputeInstanceItem{
+		ProjectId:           job.processor.provider.ProjectID,
 		Name:                *job.instance.Name,
 		Id:                  strconv.FormatUint(job.instance.GetId(), 10),
 		MachineType:         util.TrimmedString(*job.instance.MachineType, "/"),

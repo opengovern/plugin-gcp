@@ -57,6 +57,7 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 	}
 
 	job.item = ComputeInstanceItem{
+		ProjectId:           job.item.ProjectId,
 		Name:                job.item.Name,
 		Id:                  job.item.Id,
 		MachineType:         job.item.MachineType,
