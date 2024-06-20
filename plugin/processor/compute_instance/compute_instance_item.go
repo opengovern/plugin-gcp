@@ -122,6 +122,15 @@ func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem 
 
 	deviceRows, deviceProps := i.Devices()
 
+	status := ""
+	if i.Wastage.RightSizing.Recommended != nil {
+		totalSaving := 0.0
+		totalCurrentCost := 0.0
+		totalSaving += i.Wastage.RightSizing.Current.Cost - i.Wastage.RightSizing.Recommended.Cost
+		totalCurrentCost += i.Wastage.RightSizing.Current.Cost
+		status = fmt.Sprintf("%s (%.2f%%)", utils.FormatPriceFloat(totalSaving), (totalSaving/totalCurrentCost)*100)
+	}
+
 	chartrow := &golang.ChartRow{
 		RowId: i.Id,
 		Values: map[string]*golang.ChartRowItem{
@@ -144,7 +153,7 @@ func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem 
 				Value: i.Platform,
 			},
 			"total_saving": {
-				Value: i.Region,
+				Value: status,
 			},
 		},
 	}
