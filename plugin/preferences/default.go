@@ -7,7 +7,7 @@ import (
 
 var DefaultComputeEnginePreferences = []*golang.PreferenceItem{
 	{Service: "ComputeInstance", Key: "vCPU", IsNumber: true},
-	{Service: "ComputeInstance", Key: "Region", Pinned: true},
+	//{Service: "ComputeInstance", Key: "Region", Pinned: true},
 	{Service: "ComputeInstance", Key: "MachineFamily", Pinned: true},
 	{Service: "ComputeInstance", Key: "MemoryGB", Alias: "Memory", IsNumber: true, Unit: "GiB"},
 	{Service: "ComputeInstance", Key: "CPUBreathingRoom", IsNumber: true, Value: wrapperspb.String("10"), PreventPinning: true, Unit: "%"},
