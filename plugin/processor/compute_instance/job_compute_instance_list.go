@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/kaytu-io/plugin-gcp/plugin/preferences"
+	util "github.com/kaytu-io/plugin-gcp/utils"
 )
 
 type ListComputeInstancesJob struct {
@@ -27,14 +28,9 @@ func (job *ListComputeInstancesJob) Description() string {
 
 }
 
-func (job *ListComputeInstancesJob) Run() error {
+func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 
 	log.Println("Running list compute instance job")
-
-	err := job.processor.provider.InitializeClient(context.Background())
-	if err != nil {
-		return err
-	}
 
 	instances, err := job.processor.provider.GetAllInstances()
 	if err != nil {
@@ -45,15 +41,18 @@ func (job *ListComputeInstancesJob) Run() error {
 
 	for _, instance := range instances {
 		oi := ComputeInstanceItem{
+			ProjectId:           job.processor.provider.ProjectID,
 			Name:                *instance.Name,
 			Id:                  strconv.FormatUint(instance.GetId(), 10),
-			MachineType:         instance.GetMachineType(),
-			Region:              instance.GetZone(),
+			MachineType:         util.TrimmedString(*instance.MachineType, "/"),
+			Region:              util.TrimmedString(*instance.Zone, "/"),
+			Platform:            instance.GetCpuPlatform(),
 			OptimizationLoading: false,
 			Preferences:         preferences.DefaultComputeEnginePreferences,
 			Skipped:             false,
 			LazyLoadingEnabled:  false,
 			SkipReason:          "NA",
+			Metrics:             nil,
 		}
 
 		log.Printf("OI instance: %s", oi.Name)
@@ -62,8 +61,9 @@ func (job *ListComputeInstancesJob) Run() error {
 		job.processor.publishOptimizationItem(oi.ToOptimizationItem())
 	}
 
-	if err = job.processor.provider.CloseClient(); err != nil {
-		return err
+	for _, instance := range instances {
+
+		job.processor.jobQueue.Push(NewGetComputeInstanceMetricsJob(job.processor, instance))
 	}
 
 	return nil

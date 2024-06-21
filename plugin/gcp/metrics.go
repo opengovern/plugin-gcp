@@ -3,12 +3,11 @@ package gcp
 import (
 	"context"
 	"fmt"
-	"time"
+	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
+	"google.golang.org/api/iterator"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type CloudMonitoring struct {
@@ -44,46 +43,51 @@ func (c *CloudMonitoring) CloseClient() error {
 	return nil
 }
 
-func (c *CloudMonitoring) NewInstanceMetricRequest(
-	metricName string, // fully qualified name of the metric
-	instanceID string, // compute instance ID
-	startTime time.Time, // start time of requested time series
-	endTime time.Time, // end time of requested time series
-	periodInSeconds int64, // period, for which the datapoints will be aggregated into one, in seconds
+func (c *CloudMonitoring) NewTimeSeriesRequest(
+	filter string, // filter for time series metric, containing metric name and resource label
+	interval *monitoringpb.TimeInterval, // interval containing start and end time of the requested time series
+	aggregation *monitoringpb.Aggregation, // operations to perform on time series data before returning
 ) *monitoringpb.ListTimeSeriesRequest {
 
-	request := &monitoringpb.ListTimeSeriesRequest{
-		Name: fmt.Sprintf("projects/%s", c.ProjectID),
-		Filter: fmt.Sprintf(
-			`metric.type="%s" AND resource.labels.instance_id="%s"`,
-			metricName,
-			instanceID,
-		),
-		Interval: &monitoringpb.TimeInterval{
-			EndTime:   timestamppb.New(endTime),
-			StartTime: timestamppb.New(startTime),
-		},
-		Aggregation: &monitoringpb.Aggregation{
-			AlignmentPeriod: &durationpb.Duration{
-				Seconds: periodInSeconds,
-			},
-			PerSeriesAligner: monitoringpb.Aggregation_ALIGN_MEAN, // will represent all the datapoints in the above period, with a mean
-		},
-		View: monitoringpb.ListTimeSeriesRequest_FULL,
+	return &monitoringpb.ListTimeSeriesRequest{
+		Name:        fmt.Sprintf("projects/%s", c.ProjectID),
+		Filter:      filter,
+		Interval:    interval,
+		Aggregation: aggregation,
+		View:        monitoringpb.ListTimeSeriesRequest_FULL,
 	}
 
-	return request
 }
 
-func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest) *monitoringpb.TimeSeries {
+func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest) ([]kaytu.Datapoint, error) {
+	var dps []kaytu.Datapoint
 
 	it := c.client.ListTimeSeries(context.Background(), request)
+	for {
+		resp, err := it.Next()
 
-	resp, err := it.Next()
-	if err != nil {
-		panic(err)
+		if err != nil {
+			if err == iterator.Done {
+				break
+			} else {
+				return nil, err
+			}
+		}
+		dps = append(dps, convertDatapoints(resp)...)
 	}
 
-	return resp
+	return dps, nil
 
+}
+
+func convertDatapoints(resp *monitoringpb.TimeSeries) []kaytu.Datapoint {
+	var dps []kaytu.Datapoint
+	for _, dp := range resp.GetPoints() {
+		dps = append(dps, kaytu.Datapoint{
+			Value:     dp.GetValue().GetDoubleValue(),
+			StartTime: dp.GetInterval().GetStartTime().AsTime(),
+			EndTime:   dp.GetInterval().GetEndTime().AsTime(),
+		})
+	}
+	return dps
 }

@@ -10,8 +10,8 @@ import (
 )
 
 type ComputeInstanceProcessor struct {
-	provider *gcp.Compute
-	// identification          map[string]string
+	provider                *gcp.Compute
+	metricProvider          *gcp.CloudMonitoring
 	items                   util.ConcurrentMap[string, ComputeInstanceItem]
 	publishOptimizationItem func(item *golang.ChartOptimizationItem)
 	publishResultSummary    func(summary *golang.ResultSummary)
@@ -21,14 +21,16 @@ type ComputeInstanceProcessor struct {
 
 func NewComputeInstanceProcessor(
 	prv *gcp.Compute,
+	metricPrv *gcp.CloudMonitoring,
 	publishOptimizationItem func(item *golang.ChartOptimizationItem),
 	publishResultSummary func(summary *golang.ResultSummary),
 	kaytuAcccessToken string,
 	jobQueue *sdk.JobQueue,
 ) *ComputeInstanceProcessor {
+	log.Println("creating processor")
 	r := &ComputeInstanceProcessor{
-		provider: prv,
-		// identification: identification,
+		provider:                prv,
+		metricProvider:          metricPrv,
 		items:                   util.NewMap[string, ComputeInstanceItem](),
 		publishOptimizationItem: publishOptimizationItem,
 		publishResultSummary:    publishResultSummary,
@@ -37,7 +39,6 @@ func NewComputeInstanceProcessor(
 		// configuration:           configurations,
 		// lazyloadCounter:         lazyloadCounter,
 	}
-	log.Println("creating processor")
 
 	jobQueue.Push(NewListComputeInstancesJob(r))
 	return r
@@ -49,4 +50,8 @@ func (m *ComputeInstanceProcessor) ReEvaluate(id string, items []*golang.Prefere
 	// v.Preferences = items
 	// m.items.Set(id, v)
 	// m.jobQueue.Push(NewOptimizeEC2InstanceJob(m, v))
+}
+
+func (p *ComputeInstanceProcessor) ExportNonInteractive() *golang.NonInteractiveExport {
+	return nil
 }

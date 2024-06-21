@@ -2,10 +2,14 @@ package gcp
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
 	"testing"
 	"time"
+
+	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // run this test as
@@ -15,10 +19,10 @@ func TestGetMetrics(t *testing.T) {
 
 	//test variables
 	id := os.Getenv("TEST_INSTANCE_ID")
-	endtime := time.Now()
-	starttime := endtime.Add(-24 * 1 * time.Hour) // 24 hours before current time
+	endTime := time.Now()
+	startTime := endTime.Add(-24 * 1 * time.Hour) // 24 hours before current time
 
-	log.Printf("running %s", t.Name())
+	t.Logf("running %s", t.Name())
 
 	// creating and initializing client
 	metric := NewCloudMonitoring(
@@ -32,23 +36,38 @@ func TestGetMetrics(t *testing.T) {
 	}
 
 	// creating the metric request for the instance
-	request := metric.NewInstanceMetricRequest(
-		"compute.googleapis.com/instance/cpu/utilization",
-		id,
-		starttime,
-		endtime,
-		60,
+	memoryRequest := metric.NewTimeSeriesRequest(
+		fmt.Sprintf(
+			`metric.type="%s" AND resource.labels.instance_id="%s"`,
+			"compute.googleapis.com/instance/memory/balloon/ram_used",
+			id,
+		),
+		&monitoringpb.TimeInterval{
+			EndTime:   timestamppb.New(endTime),
+			StartTime: timestamppb.New(startTime),
+		},
+		&monitoringpb.Aggregation{
+			AlignmentPeriod: &durationpb.Duration{
+				Seconds: 60,
+			},
+			PerSeriesAligner: monitoringpb.Aggregation_ALIGN_NONE, // will represent all the datapoints in the above period, with a mean
+		},
 	)
 
 	// execute the request
-	resp := metric.GetMetric(request)
+	resp, err := metric.GetMetric(memoryRequest)
+	if err != nil {
+		t.Error(err)
+	}
 
-	log.Printf("metrics: %s", resp.GetMetric().String())
-	log.Printf("resource: %s", resp.GetResource().String())
-	log.Printf("# of points: %d", len(resp.Points))
+	// log.Printf("metrics: %s", resp.GetMetric().String())
+	// log.Printf("resource: %s", resp.GetResource().String())
+	t.Logf("datapoints: %d", len(resp))
+	// log.Println(resp.Unit)
+	// log.Printf("Point 1 : %.0f %s", resp.GetPoints()[0].GetValue().GetDoubleValue(), resp.GetUnit())
 
 	// for _, point := range resp.Points {
-	// 	log.Printf("Point : %.10f", point.GetValue().GetDoubleValue())
+	// 	log.Printf("Point : %.0f", point.GetValue().GetDoubleValue())
 	// }
 
 	metric.CloseClient()

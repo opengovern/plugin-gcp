@@ -3,6 +3,7 @@ package gcp
 import (
 	"context"
 	"log"
+	"os"
 	"testing"
 )
 
@@ -57,5 +58,31 @@ func TestGetAllInstances(t *testing.T) {
 	// log.Println(instances)
 
 	compute.CloseClient()
+
+}
+
+// TEST_INSTANCE_ZONE="us-east1-b" TEST_INSTANCE_MACHINE_TYPE="e2-micro" TEST_INSTANCE_ID="7828543314219019363" make testgcp
+func TestGetMemory(t *testing.T) {
+
+	machineType := os.Getenv("TEST_INSTANCE_MACHINE_TYPE")
+	zone := os.Getenv("TEST_INSTANCE_ZONE")
+
+	log.Printf("running %s", t.Name())
+	compute := NewCompute(
+		[]string{
+			"https://www.googleapis.com/auth/compute.readonly",
+		},
+	)
+	err := compute.InitializeClient(context.Background())
+	if err != nil {
+		t.Errorf("[%s]: %s", t.Name(), err.Error())
+	}
+
+	memory, err := compute.GetMemory(machineType, zone)
+	if err != nil {
+		t.Errorf("[%s]: %s", t.Name(), err.Error())
+	}
+
+	log.Printf("Memory : %d", &memory)
 
 }

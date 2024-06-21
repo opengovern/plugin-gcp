@@ -13,7 +13,8 @@ import (
 )
 
 type Compute struct {
-	client *compute.InstancesClient
+	instancesClient   *compute.InstancesClient
+	machineTypeClient *compute.MachineTypesClient
 	GCP
 }
 
@@ -38,15 +39,28 @@ func (c *Compute) InitializeClient(ctx context.Context) error {
 		return err
 	}
 
+	machineTypeClient, err := compute.NewMachineTypesRESTClient(
+		ctx,
+		option.WithCredentials(c.GCP.credentials),
+	)
+	if err != nil {
+		return err
+	}
+
 	// log.Println(instancesClient)
 
-	c.client = instancesClient
+	c.instancesClient = instancesClient
+	c.machineTypeClient = machineTypeClient
 
 	return nil
 }
 
 func (c *Compute) CloseClient() error {
-	err := c.client.Close()
+	err := c.instancesClient.Close()
+	if err != nil {
+		return err
+	}
+	err = c.machineTypeClient.Close()
 	if err != nil {
 		return err
 	}
@@ -59,7 +73,7 @@ func (c *Compute) ListAllInstances() error {
 		Project: c.ProjectID,
 	}
 
-	it := c.client.AggregatedList(context.Background(), req)
+	it := c.instancesClient.AggregatedList(context.Background(), req)
 
 	log.Println("instances found: ")
 
@@ -92,7 +106,7 @@ func (c *Compute) GetAllInstances() ([]*computepb.Instance, error) {
 		Project: c.ProjectID,
 	}
 
-	it := c.client.AggregatedList(context.Background(), req)
+	it := c.instancesClient.AggregatedList(context.Background(), req)
 
 	log.Println("instances found: ")
 
@@ -120,4 +134,23 @@ func (c *Compute) GetAllInstances() ([]*computepb.Instance, error) {
 		}
 	}
 	return allInstances, nil
+}
+
+func (c *Compute) GetMemory(InstanceMachineType string, zone string) (*int32, error) {
+
+	request := &computepb.GetMachineTypeRequest{
+		Project:     c.ProjectID,
+		MachineType: InstanceMachineType,
+		Zone:        zone,
+	}
+
+	machineType, err := c.machineTypeClient.Get(context.Background(), request)
+	if err != nil {
+		return nil, err
+	}
+
+	memory := machineType.GetMemoryMb()
+
+	return &memory, nil
+
 }

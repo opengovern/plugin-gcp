@@ -1,7 +1,9 @@
 package plugin
 
 import (
+	"context"
 	"fmt"
+	"log"
 
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
@@ -13,7 +15,7 @@ import (
 )
 
 type GCPPlugin struct {
-	stream    golang.Plugin_RegisterClient
+	stream    *sdk.StreamController
 	processor processor.PluginProcessor
 }
 
@@ -46,33 +48,80 @@ func (p *GCPPlugin) GetConfig() golang.RegisterConfig {
 
 			Columns: []*golang.ChartColumnItem{
 				{
-					Id:       "instance_name",
-					Name:     "Instance Name",
-					Width:    uint32(10),
-					Sortable: true,
+					Id:    "resource_id",
+					Name:  "Resource ID",
+					Width: uint32(10),
+				},
+				{
+					Id:    "resource_name",
+					Name:  "Resource Name",
+					Width: uint32(10),
+				},
+				{
+					Id:    "region",
+					Name:  "Region",
+					Width: uint32(15),
+				},
+				{
+					Id:    "platform",
+					Name:  "Platform",
+					Width: uint32(15),
+				},
+				{
+					Id:    "total_saving",
+					Name:  "Total Saving (Monthly)",
+					Width: uint32(40),
+				},
+				{
+					Id:    "x_kaytu_right_arrow",
+					Name:  "",
+					Width: uint32(1),
 				},
 			},
 		},
 		DevicesChart: &golang.ChartDefinition{
 			Columns: []*golang.ChartColumnItem{
 				{
-					Id:       "instance_name",
-					Name:     "Instance Name",
-					Width:    uint32(10),
-					Sortable: true,
+					Id:    "resource_id",
+					Name:  "Resource ID",
+					Width: uint32(10),
 				},
 				{
-					Id:       "project_id",
-					Name:     "Project ID",
-					Width:    uint32(10),
-					Sortable: true,
+					Id:    "resource_name",
+					Name:  "Resource Name",
+					Width: uint32(10),
+				},
+				{
+					Id:    "resource_type",
+					Name:  "Resource Type",
+					Width: uint32(10),
+				},
+				{
+					Id:    "project_id",
+					Name:  "Project ID",
+					Width: uint32(10),
+				},
+				{
+					Id:    "current_cost",
+					Name:  "Current Cost",
+					Width: uint32(20),
+				},
+				{
+					Id:    "right_sized_cost",
+					Name:  "Right sized Cost",
+					Width: 20,
+				},
+				{
+					Id:    "savings",
+					Name:  "Savings",
+					Width: 20,
 				},
 			},
 		},
 	}
 }
 
-func (p *GCPPlugin) SetStream(stream golang.Plugin_RegisterClient) {
+func (p *GCPPlugin) SetStream(stream *sdk.StreamController) {
 	p.stream = stream
 }
 
@@ -85,6 +134,24 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 			"https://www.googleapis.com/auth/compute.readonly",
 		},
 	)
+
+	metricClient := gcp.NewCloudMonitoring(
+		[]string{
+			"https://www.googleapis.com/auth/monitoring.read",
+		},
+	)
+
+	log.Println("Initializing clients")
+
+	err := gcpProvider.InitializeClient(context.Background())
+	if err != nil {
+		return err
+	}
+
+	err = metricClient.InitializeClient(context.Background())
+	if err != nil {
+		return err
+	}
 
 	publishOptimizationItem := func(item *golang.ChartOptimizationItem) {
 		p.stream.Send(&golang.PluginMessage{
@@ -117,6 +184,7 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 	if cmd == "compute-instance" {
 		p.processor = compute_instance.NewComputeInstanceProcessor(
 			gcpProvider,
+			metricClient,
 			publishOptimizationItem,
 			publishResultSummary,
 			kaytuAccessToken,
@@ -125,7 +193,7 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 	} else {
 		return fmt.Errorf("invalid command: %s", cmd)
 	}
-	jobQueue.SetOnFinish(func() {
+	jobQueue.SetOnFinish(func(ctx context.Context) {
 		publishResultsReady(true)
 	})
 
@@ -134,4 +202,8 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 
 func (p *GCPPlugin) ReEvaluate(evaluate *golang.ReEvaluate) {
 	p.processor.ReEvaluate(evaluate.Id, evaluate.Preferences)
+}
+
+func (p *GCPPlugin) ExportNonInteractive() *golang.NonInteractiveExport {
+	return nil
 }
