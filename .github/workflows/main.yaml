@@ -4,7 +4,7 @@ on:
     workflow_dispatch:
 
 env:
-    REPOSITORY_OWNER: "adorigi"
+    REPOSITORY_OWNER: "kaytu-io"
     REPOSITORY_NAME: "plugin-gcp"
 
 jobs:
