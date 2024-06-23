@@ -10,6 +10,7 @@ type GcpComputeInstance struct {
 
 type RightsizingGcpComputeInstance struct {
 	Zone          string `json:"zone"`
+	Region        string `json:"region"`
 	MachineType   string `json:"machineType"`
 	MachineFamily string `json:"machineFamily"`
 	CPU           int64  `json:"cpu"`
@@ -39,8 +40,26 @@ type GcpComputeInstanceWastageRequest struct {
 	Loading        bool                   `json:"loading"`
 }
 
+type RightsizingGcpComputeDisk struct {
+	Zone     string  `json:"zone"`
+	Region   string  `json:"region"`
+	DiskType string  `json:"diskType"`
+	DiskSize *int32  `json:"diskSize"`
+	Cost     float64 `json:"cost"`
+}
+
+type GcpComputeDiskRecommendation struct {
+	Current     RightsizingGcpComputeDisk
+	Recommended *RightsizingGcpComputeDisk
+
+	Size Usage `json:"size"`
+
+	Description string `json:"description"`
+}
+
 type GcpComputeInstanceWastageResponse struct {
-	RightSizing GcpComputeInstanceRightsizingRecommendation `json:"rightSizing"`
+	RightSizing       GcpComputeInstanceRightsizingRecommendation `json:"rightSizing"`
+	VolumeRightSizing map[string]GcpComputeDiskRecommendation     `json:"volumes"`
 }
 
 type Datapoint struct {
