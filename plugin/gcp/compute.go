@@ -3,18 +3,19 @@
 package gcp
 
 import (
-	"context"
-	"log"
-
-	compute "cloud.google.com/go/compute/apiv1"
+	computeApi "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
+	"context"
+	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"log"
 )
 
 type Compute struct {
-	instancesClient   *compute.InstancesClient
-	machineTypeClient *compute.MachineTypesClient
+	instancesClient   *computeApi.InstancesClient
+	machineTypeClient *computeApi.MachineTypesClient
+	computeService    *compute.Service
 	GCP
 }
 
@@ -31,7 +32,7 @@ func (c *Compute) InitializeClient(ctx context.Context) error {
 	// log.Println(string(c.GCP.credentials.JSON))
 	// log.Println(c.GCP.ProjectID)
 
-	instancesClient, err := compute.NewInstancesRESTClient(
+	instancesClient, err := computeApi.NewInstancesRESTClient(
 		ctx,
 		option.WithCredentials(c.GCP.credentials),
 	)
@@ -39,7 +40,15 @@ func (c *Compute) InitializeClient(ctx context.Context) error {
 		return err
 	}
 
-	machineTypeClient, err := compute.NewMachineTypesRESTClient(
+	machineTypeClient, err := computeApi.NewMachineTypesRESTClient(
+		ctx,
+		option.WithCredentials(c.GCP.credentials),
+	)
+	if err != nil {
+		return err
+	}
+
+	computeService, err := compute.NewService(
 		ctx,
 		option.WithCredentials(c.GCP.credentials),
 	)
@@ -51,6 +60,7 @@ func (c *Compute) InitializeClient(ctx context.Context) error {
 
 	c.instancesClient = instancesClient
 	c.machineTypeClient = machineTypeClient
+	c.computeService = computeService
 
 	return nil
 }
@@ -134,6 +144,14 @@ func (c *Compute) GetAllInstances() ([]*computepb.Instance, error) {
 		}
 	}
 	return allInstances, nil
+}
+
+func (c *Compute) GetDiskDetails(zone, diskName string) (*compute.Disk, error) {
+	disk, err := c.computeService.Disks.Get(c.ProjectID, zone, diskName).Context(context.Background()).Do()
+	if err != nil {
+		return nil, err
+	}
+	return disk, nil
 }
 
 func (c *Compute) GetMemory(InstanceMachineType string, zone string) (*int32, error) {
