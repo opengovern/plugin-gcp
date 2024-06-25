@@ -2,10 +2,11 @@ package compute_instance
 
 import (
 	"context"
-	"google.golang.org/api/compute/v1"
 	"log"
 	"strconv"
 	"strings"
+
+	"google.golang.org/api/compute/v1"
 
 	"github.com/kaytu-io/plugin-gcp/plugin/preferences"
 	util "github.com/kaytu-io/plugin-gcp/utils"
@@ -39,7 +40,7 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 		return err
 	}
 
-	log.Printf("# of instances: %d", len(instances))
+	// log.Printf("# of instances: %d", len(instances))
 
 	for _, instance := range instances {
 		var disks []compute.Disk

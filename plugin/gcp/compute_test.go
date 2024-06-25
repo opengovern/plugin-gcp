@@ -7,28 +7,28 @@ import (
 	"testing"
 )
 
-func TestListAllInstances(t *testing.T) {
-	log.Printf("running %s", t.Name())
-	compute := NewCompute(
-		[]string{
-			"https://www.googleapis.com/auth/compute.readonly",
-		},
-	)
-	err := compute.InitializeClient(context.Background())
-	if err != nil {
-		t.Errorf("[%s]: %s", t.Name(), err.Error())
-	}
+// func TestListAllInstances(t *testing.T) {
+// 	log.Printf("running %s", t.Name())
+// 	compute := NewCompute(
+// 		[]string{
+// 			"https://www.googleapis.com/auth/compute.readonly",
+// 		},
+// 	)
+// 	err := compute.InitializeClient(context.Background())
+// 	if err != nil {
+// 		t.Errorf("[%s]: %s", t.Name(), err.Error())
+// 	}
 
-	log.Printf("[%s]: %s", t.Name(), compute.ProjectID)
+// 	log.Printf("[%s]: %s", t.Name(), compute.ProjectID)
 
-	err = compute.ListAllInstances()
-	if err != nil {
-		compute.CloseClient()
-		t.Errorf("[%s]: %s", t.Name(), err.Error())
-	}
-	compute.CloseClient()
+// 	err = compute.ListAllInstances()
+// 	if err != nil {
+// 		compute.CloseClient()
+// 		t.Errorf("[%s]: %s", t.Name(), err.Error())
+// 	}
+// 	compute.CloseClient()
 
-}
+// }
 
 func TestGetAllInstances(t *testing.T) {
 

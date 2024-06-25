@@ -3,13 +3,14 @@
 package gcp
 
 import (
+	"context"
+	"log"
+
 	computeApi "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
-	"context"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
-	"log"
 )
 
 type Compute struct {
@@ -77,36 +78,36 @@ func (c *Compute) CloseClient() error {
 	return nil
 }
 
-func (c *Compute) ListAllInstances() error {
+// func (c *Compute) ListAllInstances() error {
 
-	req := &computepb.AggregatedListInstancesRequest{
-		Project: c.ProjectID,
-	}
+// 	req := &computepb.AggregatedListInstancesRequest{
+// 		Project: c.ProjectID,
+// 	}
 
-	it := c.instancesClient.AggregatedList(context.Background(), req)
+// 	it := c.instancesClient.AggregatedList(context.Background(), req)
 
-	log.Println("instances found: ")
+// 	log.Println("instances found: ")
 
-	for {
-		pair, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return err
-		}
+// 	for {
+// 		pair, err := it.Next()
+// 		if err == iterator.Done {
+// 			break
+// 		}
+// 		if err != nil {
+// 			return err
+// 		}
 
-		instances := pair.Value.Instances
+// 		instances := pair.Value.Instances
 
-		if len(instances) > 0 {
-			// log.Printf("%s\n", pair.Key)
-			for _, instance := range instances {
-				log.Printf("%s", instance.GetName())
-			}
-		}
-	}
-	return nil
-}
+// 		if len(instances) > 0 {
+// 			// log.Printf("%s\n", pair.Key)
+// 			for _, instance := range instances {
+// 				log.Printf("%s", instance.GetName())
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 func (c *Compute) GetAllInstances() ([]*computepb.Instance, error) {
 
