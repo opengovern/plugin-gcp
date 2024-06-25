@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"google.golang.org/api/compute/v1"
 	"maps"
+	"strconv"
 
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/utils"
@@ -117,7 +118,7 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 	props := make(map[string]*golang.Properties)
 
 	for _, d := range i.Disks {
-		key := string(d.Id)
+		key := strconv.FormatUint(d.Id, 10)
 		disk := i.Wastage.VolumeRightSizing[key]
 
 		row := golang.ChartRow{
@@ -154,10 +155,10 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 		}
 		DiskSizeProperty := &golang.Property{
 			Key:     "Disk Size",
-			Current: fmt.Sprintf("%d GB", *disk.Current.DiskSize),
+			Current: fmt.Sprintf("%d GB", d.SizeGb),
 		}
 
-		if i.Wastage.RightSizing.Recommended != nil {
+		if disk.Recommended != nil {
 			row.Values["right_sized_cost"] = &golang.ChartRowItem{
 				Value: utils.FormatPriceFloat(disk.Recommended.Cost),
 			}
@@ -166,7 +167,9 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 			}
 			RegionProperty.Recommended = disk.Recommended.Region
 			DiskTypeProperty.Recommended = disk.Recommended.DiskType
-			DiskSizeProperty.Recommended = fmt.Sprintf("%d GB", *disk.Recommended.DiskSize)
+			if disk.Recommended.DiskSize != nil {
+				DiskSizeProperty.Recommended = fmt.Sprintf("%d GB", *disk.Recommended.DiskSize)
+			}
 		}
 
 		properties := &golang.Properties{}
@@ -189,6 +192,10 @@ func (i ComputeInstanceItem) Devices() ([]*golang.ChartRow, map[string]*golang.P
 
 	instanceRows, instanceProps := i.ComputeInstanceDevice()
 	diskRows, diskProps := i.ComputeDiskDevice()
+
+	fmt.Println("==========")
+	fmt.Println("disks", diskRows)
+	fmt.Println("instance", *instanceRows)
 
 	deviceRows = append(deviceRows, instanceRows)
 	deviceRows = append(deviceRows, diskRows...)

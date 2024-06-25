@@ -3,6 +3,7 @@ package compute_instance
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu/pkg/utils"
@@ -39,7 +40,7 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 	var disks []kaytu.GcpComputeDisk
 	diskFilled := make(map[string]float64)
 	for _, disk := range job.item.Disks {
-		id := string(disk.Id)
+		id := strconv.FormatUint(disk.Id, 10)
 		disks = append(disks, kaytu.GcpComputeDisk{
 			HashedDiskId:    id,
 			DiskSize:        &disk.SizeGb,
@@ -85,6 +86,7 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 		LazyLoadingEnabled:  false,
 		SkipReason:          "NA",
 		Metrics:             job.item.Metrics,
+		Disks:               job.item.Disks,
 		Wastage:             *response,
 	}
 
