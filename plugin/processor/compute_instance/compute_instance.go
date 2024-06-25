@@ -17,6 +17,7 @@ type ComputeInstanceProcessor struct {
 	publishResultSummary    func(summary *golang.ResultSummary)
 	kaytuAcccessToken       string
 	jobQueue                *sdk.JobQueue
+	defaultPreferences      []*golang.PreferenceItem
 }
 
 func NewComputeInstanceProcessor(
@@ -26,6 +27,7 @@ func NewComputeInstanceProcessor(
 	publishResultSummary func(summary *golang.ResultSummary),
 	kaytuAcccessToken string,
 	jobQueue *sdk.JobQueue,
+	defaultPreferences []*golang.PreferenceItem,
 ) *ComputeInstanceProcessor {
 	log.Println("creating processor")
 	r := &ComputeInstanceProcessor{
@@ -36,6 +38,7 @@ func NewComputeInstanceProcessor(
 		publishResultSummary:    publishResultSummary,
 		kaytuAcccessToken:       kaytuAcccessToken,
 		jobQueue:                jobQueue,
+		defaultPreferences:      defaultPreferences,
 		// configuration:           configurations,
 		// lazyloadCounter:         lazyloadCounter,
 	}
