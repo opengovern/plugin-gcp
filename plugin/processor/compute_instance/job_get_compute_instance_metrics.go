@@ -3,10 +3,10 @@ package compute_instance
 import (
 	"context"
 	"fmt"
-	"google.golang.org/api/compute/v1"
-	"log"
 	"strconv"
 	"time"
+
+	"google.golang.org/api/compute/v1"
 
 	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
 
@@ -46,11 +46,6 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 	endTime := time.Now()                         // end time of requested time series
 	startTime := endTime.Add(-24 * 1 * time.Hour) // start time of requested time series
 
-	// metricName string,
-	// instanceID string,
-	// startTime time.Time,
-	// endTime time.Time,
-	// periodInSeconds int64,
 	cpuRequest := job.processor.metricProvider.NewTimeSeriesRequest(
 		fmt.Sprintf(
 			`metric.type="%s" AND resource.labels.instance_id="%s"`,
@@ -97,10 +92,34 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		return err
 	}
 
+	diskMetricRequest := job.processor.metricProvider.NewTimeSeriesRequest(
+		fmt.Sprintf(
+			`metric.type="%s" AND resource.labels.instance_id="%s"`,
+			"agent.googleapis.com/disk/percent_used",
+			fmt.Sprint(job.instance.GetId()),
+		),
+		&monitoringpb.TimeInterval{
+			EndTime:   timestamppb.New(endTime),
+			StartTime: timestamppb.New(startTime),
+		},
+		&monitoringpb.Aggregation{
+			AlignmentPeriod: &durationpb.Duration{
+				Seconds: 60,
+			},
+			PerSeriesAligner: monitoringpb.Aggregation_ALIGN_NONE, // will represent all the datapoints in the above period, with a mean
+		},
+	)
+
+	diskMetric, err := job.processor.metricProvider.GetMetric(diskMetricRequest)
+	if err != nil {
+		return err
+	}
+
 	instanceMetrics := make(map[string][]kaytu.Datapoint)
 
 	instanceMetrics["cpuUtilization"] = cpumetric
 	instanceMetrics["memoryUtilization"] = memoryMetric
+	instanceMetrics["diskUtilization"] = diskMetric
 
 	oi := ComputeInstanceItem{
 		ProjectId:           job.processor.provider.ProjectID,
@@ -116,10 +135,6 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		SkipReason:          "NA",
 		Disks:               job.disks,
 		Metrics:             instanceMetrics,
-	}
-
-	for k, v := range oi.Metrics {
-		log.Printf("%s : %d", k, len(v))
 	}
 
 	job.processor.items.Set(oi.Id, oi)
