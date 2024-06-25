@@ -23,7 +23,7 @@ func NewPlugin() *GCPPlugin {
 	return &GCPPlugin{}
 }
 
-func (p *GCPPlugin) GetConfig() golang.RegisterConfig {
+func (p *GCPPlugin) GetConfig(_ context.Context) golang.RegisterConfig {
 	return golang.RegisterConfig{
 		Name:     "kaytu-io/plugin-gcp",
 		Version:  version.VERSION,
@@ -121,12 +121,12 @@ func (p *GCPPlugin) GetConfig() golang.RegisterConfig {
 	}
 }
 
-func (p *GCPPlugin) SetStream(stream *sdk.StreamController) {
+func (p *GCPPlugin) SetStream(_ context.Context, stream *sdk.StreamController) {
 	p.stream = stream
 }
 
 // StartProcess implements sdk.Processor.
-func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAccessToken string, jobQueue *sdk.JobQueue) error {
+func (p *GCPPlugin) StartProcess(ctx context.Context, cmd string, flags map[string]string, kaytuAccessToken string, preferences []*golang.PreferenceItem, jobQueue *sdk.JobQueue) error {
 
 	// scope used from https://developers.google.com/identity/protocols/oauth2/scopes#compute
 	gcpProvider := gcp.NewCompute(
@@ -143,12 +143,12 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 
 	log.Println("Initializing clients")
 
-	err := gcpProvider.InitializeClient(context.Background())
+	err := gcpProvider.InitializeClient(ctx)
 	if err != nil {
 		return err
 	}
 
-	err = metricClient.InitializeClient(context.Background())
+	err = metricClient.InitializeClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -189,6 +189,7 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 			publishResultSummary,
 			kaytuAccessToken,
 			jobQueue,
+			preferences,
 		)
 	} else {
 		return fmt.Errorf("invalid command: %s", cmd)
@@ -200,7 +201,7 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 	return nil
 }
 
-func (p *GCPPlugin) ReEvaluate(evaluate *golang.ReEvaluate) {
+func (p *GCPPlugin) ReEvaluate(_ context.Context, evaluate *golang.ReEvaluate) {
 	p.processor.ReEvaluate(evaluate.Id, evaluate.Preferences)
 }
 
