@@ -3,6 +3,7 @@ package compute_instance
 import (
 	"context"
 	"fmt"
+	"google.golang.org/api/compute/v1"
 	"log"
 	"strconv"
 	"time"
@@ -20,12 +21,14 @@ import (
 type GetComputeInstanceMetricsJob struct {
 	processor *ComputeInstanceProcessor
 	instance  *computepb.Instance
+	disks     []compute.Disk
 }
 
-func NewGetComputeInstanceMetricsJob(processor *ComputeInstanceProcessor, instance *computepb.Instance) *GetComputeInstanceMetricsJob {
+func NewGetComputeInstanceMetricsJob(processor *ComputeInstanceProcessor, instance *computepb.Instance, disks []compute.Disk) *GetComputeInstanceMetricsJob {
 	return &GetComputeInstanceMetricsJob{
 		processor: processor,
 		instance:  instance,
+		disks:     disks,
 	}
 }
 
@@ -111,6 +114,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		Skipped:             false,
 		LazyLoadingEnabled:  false,
 		SkipReason:          "NA",
+		Disks:               job.disks,
 		Metrics:             instanceMetrics,
 	}
 

@@ -2,7 +2,9 @@ package compute_instance
 
 import (
 	"fmt"
+	"google.golang.org/api/compute/v1"
 	"maps"
+	"strconv"
 
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/utils"
@@ -22,6 +24,7 @@ type ComputeInstanceItem struct {
 	Skipped             bool
 	LazyLoadingEnabled  bool
 	SkipReason          string
+	Disks               []compute.Disk
 	Metrics             map[string][]kaytu.Datapoint
 	Wastage             kaytu.GcpComputeInstanceWastageResponse
 }
@@ -110,15 +113,94 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 	return &row, props
 }
 
+func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string]*golang.Properties) {
+	var rows []*golang.ChartRow
+	props := make(map[string]*golang.Properties)
+
+	for _, d := range i.Disks {
+		key := strconv.FormatUint(d.Id, 10)
+		disk := i.Wastage.VolumeRightSizing[key]
+
+		row := golang.ChartRow{
+			RowId:  key,
+			Values: make(map[string]*golang.ChartRowItem),
+		}
+		row.RowId = key
+
+		row.Values["project_id"] = &golang.ChartRowItem{
+			Value: i.ProjectId,
+		}
+		row.Values["resource_id"] = &golang.ChartRowItem{
+			Value: key,
+		}
+		row.Values["resource_name"] = &golang.ChartRowItem{
+			Value: d.Name,
+		}
+		row.Values["resource_type"] = &golang.ChartRowItem{
+			Value: "Compute Disk",
+		}
+
+		row.Values["current_cost"] = &golang.ChartRowItem{
+			Value: utils.FormatPriceFloat(disk.Current.Cost),
+		}
+
+		RegionProperty := &golang.Property{
+			Key:     "Region",
+			Current: disk.Current.Region,
+		}
+
+		DiskTypeProperty := &golang.Property{
+			Key:     "Disk Type",
+			Current: disk.Current.DiskType,
+		}
+		DiskSizeProperty := &golang.Property{
+			Key:     "Disk Size",
+			Current: fmt.Sprintf("%d GB", d.SizeGb),
+		}
+
+		if disk.Recommended != nil {
+			row.Values["right_sized_cost"] = &golang.ChartRowItem{
+				Value: utils.FormatPriceFloat(disk.Recommended.Cost),
+			}
+			row.Values["savings"] = &golang.ChartRowItem{
+				Value: utils.FormatPriceFloat(disk.Current.Cost - disk.Recommended.Cost),
+			}
+			RegionProperty.Recommended = disk.Recommended.Region
+			DiskTypeProperty.Recommended = disk.Recommended.DiskType
+			if disk.Recommended.DiskSize != nil {
+				DiskSizeProperty.Recommended = fmt.Sprintf("%d GB", *disk.Recommended.DiskSize)
+			}
+		}
+
+		properties := &golang.Properties{}
+
+		properties.Properties = append(properties.Properties, RegionProperty)
+		properties.Properties = append(properties.Properties, DiskTypeProperty)
+		properties.Properties = append(properties.Properties, DiskSizeProperty)
+
+		props[key] = properties
+		rows = append(rows, &row)
+	}
+
+	return rows, props
+}
+
 func (i ComputeInstanceItem) Devices() ([]*golang.ChartRow, map[string]*golang.Properties) {
 
 	var deviceRows []*golang.ChartRow
 	deviceProps := make(map[string]*golang.Properties)
 
 	instanceRows, instanceProps := i.ComputeInstanceDevice()
+	diskRows, diskProps := i.ComputeDiskDevice()
+
+	fmt.Println("==========")
+	fmt.Println("disks", diskRows)
+	fmt.Println("instance", *instanceRows)
 
 	deviceRows = append(deviceRows, instanceRows)
+	deviceRows = append(deviceRows, diskRows...)
 	maps.Copy(deviceProps, instanceProps)
+	maps.Copy(deviceProps, diskProps)
 
 	return deviceRows, deviceProps
 }
