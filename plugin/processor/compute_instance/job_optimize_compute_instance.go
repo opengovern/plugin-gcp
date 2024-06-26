@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu/pkg/utils"
@@ -41,13 +42,20 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 	diskFilled := make(map[string]float64)
 	for _, disk := range job.item.Disks {
 		id := strconv.FormatUint(disk.Id, 10)
+		typeURLParts := strings.Split(disk.Type, "/")
+		diskType := typeURLParts[len(typeURLParts)-1]
+
+		zoneURLParts := strings.Split(disk.Zone, "/")
+		diskZone := zoneURLParts[len(zoneURLParts)-1]
+		region := strings.Join([]string{strings.Split(diskZone, "-")[0], strings.Split(diskZone, "-")[1]}, "-")
+
 		disks = append(disks, kaytu.GcpComputeDisk{
 			HashedDiskId:    id,
 			DiskSize:        &disk.SizeGb,
-			DiskType:        disk.Type,
-			Region:          disk.Region,
+			DiskType:        diskType,
+			Region:          region,
 			ProvisionedIops: &disk.ProvisionedIops,
-			Zone:            disk.Zone,
+			Zone:            diskZone,
 		})
 		diskFilled[id] = 0
 	}
@@ -61,11 +69,12 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 			Zone:             job.item.Region,
 			MachineType:      job.item.MachineType,
 		},
-		Disks:       disks,
-		Metrics:     job.item.Metrics,
-		Region:      job.item.Region,
-		Preferences: preferences.Export(job.item.Preferences),
-		Loading:     false,
+		Disks:        disks,
+		Metrics:      job.item.Metrics,
+		DisksMetrics: job.item.DisksMetrics,
+		Region:       job.item.Region,
+		Preferences:  preferences.Export(job.item.Preferences),
+		Loading:      false,
 	}
 
 	response, err := kaytu.Ec2InstanceWastageRequest(request, job.processor.kaytuAcccessToken)

@@ -2,14 +2,13 @@ package compute_instance
 
 import (
 	"fmt"
-	"google.golang.org/api/compute/v1"
-	"maps"
-	"strconv"
-
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/utils"
 	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
+	"google.golang.org/api/compute/v1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"maps"
+	"strconv"
 )
 
 type ComputeInstanceItem struct {
@@ -26,6 +25,7 @@ type ComputeInstanceItem struct {
 	SkipReason          string
 	Disks               []compute.Disk
 	Metrics             map[string][]kaytu.Datapoint
+	DisksMetrics        map[string]map[string][]kaytu.Datapoint
 	Wastage             kaytu.GcpComputeInstanceWastageResponse
 }
 
@@ -66,6 +66,8 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 	CPUProperty := &golang.Property{
 		Key:     "  CPU",
 		Current: fmt.Sprintf("%d", i.Wastage.RightSizing.Current.CPU),
+		Average: utils.Percentage(i.Wastage.RightSizing.CPU.Avg),
+		Max:     utils.Percentage(i.Wastage.RightSizing.CPU.Max),
 	}
 
 	memoryProperty := &golang.Property{
@@ -153,9 +155,17 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 			Key:     "Disk Type",
 			Current: disk.Current.DiskType,
 		}
-		DiskSizeProperty := &golang.Property{
-			Key:     "Disk Size",
+		DiskIopsProperty := &golang.Property{
+			Key:     "IOPS",
 			Current: fmt.Sprintf("%d GB", d.SizeGb),
+			Average: utils.Percentage(disk.Iops.Avg),
+			Max:     utils.Percentage(disk.Iops.Max),
+		}
+		DiskThroughputProperty := &golang.Property{
+			Key:     "Throughput",
+			Current: fmt.Sprintf("%d GB", d.SizeGb),
+			Average: utils.Percentage(disk.Throughput.Avg),
+			Max:     utils.Percentage(disk.Throughput.Max),
 		}
 
 		if disk.Recommended != nil {
@@ -168,7 +178,7 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 			RegionProperty.Recommended = disk.Recommended.Region
 			DiskTypeProperty.Recommended = disk.Recommended.DiskType
 			if disk.Recommended.DiskSize != nil {
-				DiskSizeProperty.Recommended = fmt.Sprintf("%d GB", *disk.Recommended.DiskSize)
+				DiskIopsProperty.Recommended = fmt.Sprintf("%d GB", *disk.Recommended.DiskSize)
 			}
 		}
 
@@ -176,7 +186,8 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 
 		properties.Properties = append(properties.Properties, RegionProperty)
 		properties.Properties = append(properties.Properties, DiskTypeProperty)
-		properties.Properties = append(properties.Properties, DiskSizeProperty)
+		properties.Properties = append(properties.Properties, DiskIopsProperty)
+		properties.Properties = append(properties.Properties, DiskThroughputProperty)
 
 		props[key] = properties
 		rows = append(rows, &row)
@@ -192,10 +203,6 @@ func (i ComputeInstanceItem) Devices() ([]*golang.ChartRow, map[string]*golang.P
 
 	instanceRows, instanceProps := i.ComputeInstanceDevice()
 	diskRows, diskProps := i.ComputeDiskDevice()
-
-	fmt.Println("==========")
-	fmt.Println("disks", diskRows)
-	fmt.Println("instance", *instanceRows)
 
 	deviceRows = append(deviceRows, instanceRows)
 	deviceRows = append(deviceRows, diskRows...)
