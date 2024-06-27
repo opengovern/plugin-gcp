@@ -155,17 +155,33 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 			Key:     "Disk Type",
 			Current: disk.Current.DiskType,
 		}
-		DiskIopsProperty := &golang.Property{
-			Key:     "IOPS",
-			Current: fmt.Sprintf("%d GB", d.SizeGb),
-			Average: utils.Percentage(disk.Iops.Avg),
-			Max:     utils.Percentage(disk.Iops.Max),
+		DiskSizeProperty := &golang.Property{
+			Key:     "Disk Size",
+			Current: fmt.Sprintf("%d GB", disk.Current.DiskSize),
 		}
-		DiskThroughputProperty := &golang.Property{
-			Key:     "Throughput",
-			Current: fmt.Sprintf("%d GB", d.SizeGb),
-			Average: utils.Percentage(disk.Throughput.Avg),
-			Max:     utils.Percentage(disk.Throughput.Max),
+		DiskReadIopsProperty := &golang.Property{
+			Key:     "  Read IOPS Limit",
+			Current: fmt.Sprintf("%d", disk.Current.ReadIopsLimit),
+			Average: utils.PFloat64ToString(disk.ReadIops.Avg),
+			Max:     utils.PFloat64ToString(disk.ReadIops.Max),
+		}
+		DiskWriteIopsProperty := &golang.Property{
+			Key:     "  Write IOPS Limit",
+			Current: fmt.Sprintf("%d", disk.Current.WriteIopsLimit),
+			Average: utils.PFloat64ToString(disk.WriteIops.Avg),
+			Max:     utils.PFloat64ToString(disk.WriteIops.Max),
+		}
+		DiskReadThroughputProperty := &golang.Property{
+			Key:     "  Read Throughput Limit",
+			Current: fmt.Sprintf("%d Mb", disk.Current.ReadThroughputLimit),
+			Average: fmt.Sprintf("%s Mb", utils.PFloat64ToString(disk.ReadThroughput.Avg)),
+			Max:     fmt.Sprintf("%s Mb", utils.PFloat64ToString(disk.ReadThroughput.Max)),
+		}
+		DiskWriteThroughputProperty := &golang.Property{
+			Key:     "  Write Throughput Limit",
+			Current: fmt.Sprintf("%d Mb", disk.Current.WriteThroughputLimit),
+			Average: fmt.Sprintf("%s Mb", utils.PFloat64ToString(disk.WriteThroughput.Avg)),
+			Max:     fmt.Sprintf("%s Mb", utils.PFloat64ToString(disk.WriteThroughput.Max)),
 		}
 
 		if disk.Recommended != nil {
@@ -177,17 +193,28 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 			}
 			RegionProperty.Recommended = disk.Recommended.Region
 			DiskTypeProperty.Recommended = disk.Recommended.DiskType
-			if disk.Recommended.DiskSize != nil {
-				DiskIopsProperty.Recommended = fmt.Sprintf("%d GB", *disk.Recommended.DiskSize)
-			}
+			DiskReadIopsProperty.Recommended = fmt.Sprintf("%d", disk.Recommended.ReadIopsLimit)
+			DiskWriteIopsProperty.Recommended = fmt.Sprintf("%d", disk.Recommended.WriteIopsLimit)
+			DiskReadThroughputProperty.Recommended = fmt.Sprintf("%d Mb", disk.Recommended.ReadThroughputLimit)
+			DiskWriteThroughputProperty.Recommended = fmt.Sprintf("%d Mb", disk.Recommended.WriteThroughputLimit)
+			DiskSizeProperty.Recommended = fmt.Sprintf("%d GB", disk.Recommended.DiskSize)
 		}
 
 		properties := &golang.Properties{}
 
 		properties.Properties = append(properties.Properties, RegionProperty)
 		properties.Properties = append(properties.Properties, DiskTypeProperty)
-		properties.Properties = append(properties.Properties, DiskIopsProperty)
-		properties.Properties = append(properties.Properties, DiskThroughputProperty)
+		properties.Properties = append(properties.Properties, DiskSizeProperty)
+		properties.Properties = append(properties.Properties, &golang.Property{
+			Key: "IOPS",
+		})
+		properties.Properties = append(properties.Properties, DiskReadIopsProperty)
+		properties.Properties = append(properties.Properties, DiskWriteIopsProperty)
+		properties.Properties = append(properties.Properties, &golang.Property{
+			Key: "Throughput",
+		})
+		properties.Properties = append(properties.Properties, DiskReadThroughputProperty)
+		properties.Properties = append(properties.Properties, DiskWriteThroughputProperty)
 
 		props[key] = properties
 		rows = append(rows, &row)
