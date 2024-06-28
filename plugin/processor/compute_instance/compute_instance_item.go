@@ -50,9 +50,9 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 		Value: utils.FormatPriceFloat(i.Wastage.RightSizing.Current.Cost),
 	}
 
-	ZoneProperty := &golang.Property{
-		Key:     "Zone",
-		Current: i.Wastage.RightSizing.Current.Zone,
+	RegionProperty := &golang.Property{
+		Key:     "Region",
+		Current: i.Wastage.RightSizing.Current.Region,
 	}
 
 	MachineTypeProperty := &golang.Property{
@@ -92,7 +92,7 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 		row.Values["savings"] = &golang.ChartRowItem{
 			Value: utils.FormatPriceFloat(i.Wastage.RightSizing.Current.Cost - i.Wastage.RightSizing.Recommended.Cost),
 		}
-		ZoneProperty.Recommended = i.Wastage.RightSizing.Recommended.Zone
+		RegionProperty.Recommended = i.Wastage.RightSizing.Recommended.Region
 		MachineTypeProperty.Recommended = i.Wastage.RightSizing.Recommended.MachineType
 		CPUProperty.Recommended = fmt.Sprintf("%d", i.Wastage.RightSizing.Recommended.CPU)
 		memoryProperty.Recommended = fmt.Sprintf("%d MB", i.Wastage.RightSizing.Recommended.MemoryMb)
@@ -101,7 +101,7 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 	props := make(map[string]*golang.Properties)
 	properties := &golang.Properties{}
 
-	properties.Properties = append(properties.Properties, ZoneProperty)
+	properties.Properties = append(properties.Properties, RegionProperty)
 	properties.Properties = append(properties.Properties, MachineTypeProperty)
 	properties.Properties = append(properties.Properties, MachineFamilyProperty)
 	properties.Properties = append(properties.Properties, &golang.Property{
@@ -160,26 +160,26 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 			Current: fmt.Sprintf("%d GB", disk.Current.DiskSize),
 		}
 		DiskReadIopsProperty := &golang.Property{
-			Key:     "  Read IOPS Limit",
+			Key:     "  Read IOPS Expectation",
 			Current: fmt.Sprintf("%d", disk.Current.ReadIopsLimit),
 			Average: utils.PFloat64ToString(disk.ReadIops.Avg),
 			Max:     utils.PFloat64ToString(disk.ReadIops.Max),
 		}
 		DiskWriteIopsProperty := &golang.Property{
-			Key:     "  Write IOPS Limit",
+			Key:     "  Write IOPS Expectation",
 			Current: fmt.Sprintf("%d", disk.Current.WriteIopsLimit),
 			Average: utils.PFloat64ToString(disk.WriteIops.Avg),
 			Max:     utils.PFloat64ToString(disk.WriteIops.Max),
 		}
 		DiskReadThroughputProperty := &golang.Property{
-			Key:     "  Read Throughput Limit",
-			Current: fmt.Sprintf("%d Mb", disk.Current.ReadThroughputLimit),
+			Key:     "  Read Throughput Expectation",
+			Current: fmt.Sprintf("%.2f Mb", disk.Current.ReadThroughputLimit),
 			Average: fmt.Sprintf("%s Mb", utils.PFloat64ToString(disk.ReadThroughput.Avg)),
 			Max:     fmt.Sprintf("%s Mb", utils.PFloat64ToString(disk.ReadThroughput.Max)),
 		}
 		DiskWriteThroughputProperty := &golang.Property{
-			Key:     "  Write Throughput Limit",
-			Current: fmt.Sprintf("%d Mb", disk.Current.WriteThroughputLimit),
+			Key:     "  Write Throughput Expectation",
+			Current: fmt.Sprintf("%.2f Mb", disk.Current.WriteThroughputLimit),
 			Average: fmt.Sprintf("%s Mb", utils.PFloat64ToString(disk.WriteThroughput.Avg)),
 			Max:     fmt.Sprintf("%s Mb", utils.PFloat64ToString(disk.WriteThroughput.Max)),
 		}
@@ -195,8 +195,8 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 			DiskTypeProperty.Recommended = disk.Recommended.DiskType
 			DiskReadIopsProperty.Recommended = fmt.Sprintf("%d", disk.Recommended.ReadIopsLimit)
 			DiskWriteIopsProperty.Recommended = fmt.Sprintf("%d", disk.Recommended.WriteIopsLimit)
-			DiskReadThroughputProperty.Recommended = fmt.Sprintf("%d Mb", disk.Recommended.ReadThroughputLimit)
-			DiskWriteThroughputProperty.Recommended = fmt.Sprintf("%d Mb", disk.Recommended.WriteThroughputLimit)
+			DiskReadThroughputProperty.Recommended = fmt.Sprintf("%.2f Mb", disk.Recommended.ReadThroughputLimit)
+			DiskWriteThroughputProperty.Recommended = fmt.Sprintf("%.2f Mb", disk.Recommended.WriteThroughputLimit)
 			DiskSizeProperty.Recommended = fmt.Sprintf("%d GB", disk.Recommended.DiskSize)
 		}
 

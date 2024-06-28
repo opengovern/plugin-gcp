@@ -16,4 +16,5 @@ var DefaultComputeEnginePreferences = []*golang.PreferenceItem{
 
 	{Service: "ComputeInstance", Key: "Region", Pinned: true},
 	{Service: "ComputeInstance", Key: "DiskType"},
+	{Service: "ComputeInstance", Key: "DiskSizeGb", IsNumber: true, Unit: "GiB"},
 }
