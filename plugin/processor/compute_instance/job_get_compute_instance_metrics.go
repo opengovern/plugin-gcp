@@ -227,6 +227,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 	job.processor.publishOptimizationItem(oi.ToOptimizationItem())
 
 	job.processor.jobQueue.Push(NewOptimizeComputeInstancesJob(job.processor, oi))
+	job.processor.UpdateSummary(oi.Id)
 
 	return nil
 

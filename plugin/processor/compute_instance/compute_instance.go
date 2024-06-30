@@ -2,6 +2,7 @@ package compute_instance
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu/pkg/style"
 	"github.com/kaytu-io/kaytu/pkg/utils"
 	"strconv"
 	"strings"
@@ -22,6 +23,8 @@ type ComputeInstanceProcessor struct {
 	kaytuAcccessToken       string
 	jobQueue                *sdk.JobQueue
 	lazyloadCounter         atomic.Uint32
+
+	summary util.ConcurrentMap[string, ComputeInstanceSummary]
 }
 
 func NewComputeInstanceProcessor(
@@ -51,10 +54,6 @@ func (m *ComputeInstanceProcessor) ReEvaluate(id string, items []*golang.Prefere
 	v, _ := m.items.Get(id)
 	v.Preferences = items
 	m.items.Set(id, v)
-	fmt.Println("HERE===================")
-	fmt.Println("Instance Metrics", len(v.Metrics))
-	fmt.Println("Disk Metrics", len(v.DisksMetrics))
-	fmt.Println("Disks", len(v.Disks))
 	v.OptimizationLoading = true
 	m.publishOptimizationItem(v.ToOptimizationItem())
 	m.jobQueue.Push(NewOptimizeComputeInstancesJob(m, v))
@@ -141,4 +140,38 @@ func (m *ComputeInstanceProcessor) exportCsv() []*golang.CSVRow {
 		return true
 	})
 	return rows
+}
+
+func (m *ComputeInstanceProcessor) ResultsSummary() *golang.ResultSummary {
+	summary := &golang.ResultSummary{}
+	var totalCost, savings float64
+	m.summary.Range(func(_ string, item ComputeInstanceSummary) bool {
+		totalCost += item.CurrentRuntimeCost
+		savings += item.Savings
+		return true
+	})
+
+	summary.Message = fmt.Sprintf("Current runtime cost: %s, Savings: %s",
+		style.CostStyle.Render(fmt.Sprintf("%s", utils.FormatPriceFloat(totalCost))), style.SavingStyle.Render(fmt.Sprintf("%s", utils.FormatPriceFloat(savings))))
+	return summary
+}
+
+func (m *ComputeInstanceProcessor) UpdateSummary(itemId string) {
+	i, ok := m.items.Get(itemId)
+	if ok && i.Wastage.RightSizing.Recommended != nil {
+		totalSaving := 0.0
+		totalCurrentCost := 0.0
+		for _, v := range i.Wastage.VolumeRightSizing {
+			totalSaving += v.Current.Cost - v.Recommended.Cost
+			totalCurrentCost += v.Current.Cost
+		}
+		totalSaving += i.Wastage.RightSizing.Current.Cost - i.Wastage.RightSizing.Recommended.Cost
+		totalCurrentCost += i.Wastage.RightSizing.Current.Cost
+
+		m.summary.Set(itemId, ComputeInstanceSummary{
+			CurrentRuntimeCost: totalCurrentCost,
+			Savings:            totalSaving,
+		})
+	}
+	m.publishResultSummary(m.ResultsSummary())
 }
