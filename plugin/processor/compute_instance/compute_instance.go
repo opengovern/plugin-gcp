@@ -3,9 +3,9 @@ package compute_instance
 import (
 	"fmt"
 	"github.com/kaytu-io/kaytu/pkg/utils"
-	"log"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
@@ -21,6 +21,7 @@ type ComputeInstanceProcessor struct {
 	publishResultSummary    func(summary *golang.ResultSummary)
 	kaytuAcccessToken       string
 	jobQueue                *sdk.JobQueue
+	lazyloadCounter         atomic.Uint32
 }
 
 func NewComputeInstanceProcessor(
@@ -31,7 +32,6 @@ func NewComputeInstanceProcessor(
 	kaytuAcccessToken string,
 	jobQueue *sdk.JobQueue,
 ) *ComputeInstanceProcessor {
-	log.Println("creating processor")
 	r := &ComputeInstanceProcessor{
 		provider:                prv,
 		metricProvider:          metricPrv,
@@ -40,8 +40,7 @@ func NewComputeInstanceProcessor(
 		publishResultSummary:    publishResultSummary,
 		kaytuAcccessToken:       kaytuAcccessToken,
 		jobQueue:                jobQueue,
-		// configuration:           configurations,
-		// lazyloadCounter:         lazyloadCounter,
+		lazyloadCounter:         atomic.Uint32{},
 	}
 
 	jobQueue.Push(NewListComputeInstancesJob(r))
@@ -49,11 +48,16 @@ func NewComputeInstanceProcessor(
 }
 
 func (m *ComputeInstanceProcessor) ReEvaluate(id string, items []*golang.PreferenceItem) {
-	log.Println("Reevaluate unimplemented")
-	// v, _ := m.items.Get(id)
-	// v.Preferences = items
-	// m.items.Set(id, v)
-	// m.jobQueue.Push(NewOptimizeEC2InstanceJob(m, v))
+	v, _ := m.items.Get(id)
+	v.Preferences = items
+	m.items.Set(id, v)
+	fmt.Println("HERE===================")
+	fmt.Println("Instance Metrics", len(v.Metrics))
+	fmt.Println("Disk Metrics", len(v.DisksMetrics))
+	fmt.Println("Disks", len(v.Disks))
+	v.OptimizationLoading = true
+	m.publishOptimizationItem(v.ToOptimizationItem())
+	m.jobQueue.Push(NewOptimizeComputeInstancesJob(m, v))
 }
 
 func (m *ComputeInstanceProcessor) ExportNonInteractive() *golang.NonInteractiveExport {

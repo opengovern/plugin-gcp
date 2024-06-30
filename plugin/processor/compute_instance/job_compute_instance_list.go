@@ -64,16 +64,23 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 			MachineType:         util.TrimmedString(*instance.MachineType, "/"),
 			Region:              util.TrimmedString(*instance.Zone, "/"),
 			Platform:            instance.GetCpuPlatform(),
-			OptimizationLoading: false,
+			OptimizationLoading: true,
 			Preferences:         preferences.DefaultComputeEnginePreferences,
 			Skipped:             false,
 			LazyLoadingEnabled:  false,
 			SkipReason:          "NA",
+			Instance:            instance,
 			Disks:               disks,
 			Metrics:             nil,
+			DisksMetrics:        nil,
 		}
 
-		log.Printf("OI instance: %s", oi.Name)
+		if !oi.Skipped {
+			job.processor.lazyloadCounter.Add(1)
+			if job.processor.lazyloadCounter.Load() > uint32(1) {
+				oi.LazyLoadingEnabled = true
+			}
+		}
 
 		job.processor.items.Set(oi.Id, oi)
 		job.processor.publishOptimizationItem(oi.ToOptimizationItem())

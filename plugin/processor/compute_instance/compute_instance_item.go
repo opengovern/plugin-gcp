@@ -1,6 +1,7 @@
 package compute_instance
 
 import (
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"fmt"
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/utils"
@@ -23,6 +24,7 @@ type ComputeInstanceItem struct {
 	Skipped             bool
 	LazyLoadingEnabled  bool
 	SkipReason          string
+	Instance            *computepb.Instance
 	Disks               []compute.Disk
 	Metrics             map[string][]kaytu.Datapoint
 	DisksMetrics        map[string]map[string][]kaytu.Datapoint
@@ -244,11 +246,21 @@ func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem 
 	deviceRows, deviceProps := i.Devices()
 
 	status := ""
-	if i.Wastage.RightSizing.Recommended != nil {
+	if i.Skipped {
+		status = fmt.Sprintf("skipped - %s", i.SkipReason)
+	} else if i.LazyLoadingEnabled && !i.OptimizationLoading {
+		status = "press enter to load"
+	} else if i.OptimizationLoading {
+		status = "loading"
+	} else if i.Wastage.RightSizing.Recommended != nil {
 		totalSaving := 0.0
 		totalCurrentCost := 0.0
 		totalSaving += i.Wastage.RightSizing.Current.Cost - i.Wastage.RightSizing.Recommended.Cost
 		totalCurrentCost += i.Wastage.RightSizing.Current.Cost
+		for _, d := range i.Wastage.VolumeRightSizing {
+			totalSaving += d.Current.Cost - d.Recommended.Cost
+			totalCurrentCost += d.Current.Cost
+		}
 		status = fmt.Sprintf("%s (%.2f%%)", utils.FormatPriceFloat(totalSaving), (totalSaving/totalCurrentCost)*100)
 	}
 
@@ -284,7 +296,7 @@ func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem 
 		DevicesChartRows:   deviceRows,
 		DevicesProperties:  deviceProps,
 		Preferences:        i.Preferences,
-		Description:        "description placeholder",
+		Description:        i.Wastage.RightSizing.Description,
 		Loading:            i.OptimizationLoading,
 		Skipped:            i.Skipped,
 		SkipReason:         wrapperspb.String(i.SkipReason),

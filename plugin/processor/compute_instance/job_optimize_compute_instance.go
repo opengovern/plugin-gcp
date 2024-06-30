@@ -35,6 +35,10 @@ func (job *OptimizeComputeInstancesJob) Description() string {
 }
 
 func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
+	if job.item.LazyLoadingEnabled {
+		job.processor.jobQueue.Push(NewGetComputeInstanceMetricsJob(job.processor, job.item.Instance, job.item.Disks))
+		return nil
+	}
 
 	requestId := uuid.NewString()
 
@@ -95,6 +99,8 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 		LazyLoadingEnabled:  false,
 		SkipReason:          "NA",
 		Metrics:             job.item.Metrics,
+		DisksMetrics:        job.item.DisksMetrics,
+		Instance:            job.item.Instance,
 		Disks:               job.item.Disks,
 		Wastage:             *response,
 	}

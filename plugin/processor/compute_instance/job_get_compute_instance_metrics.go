@@ -46,11 +46,6 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 	endTime := time.Now()                         // end time of requested time series
 	startTime := endTime.Add(-24 * 1 * time.Hour) // start time of requested time series
 
-	// metricName string,
-	// instanceID string,
-	// startTime time.Time,
-	// endTime time.Time,
-	// periodInSeconds int64,
 	cpuRequest := job.processor.metricProvider.NewTimeSeriesRequest(
 		fmt.Sprintf(
 			`metric.type="%s" AND resource.labels.instance_id="%s"`,
@@ -211,11 +206,12 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		MachineType:         util.TrimmedString(*job.instance.MachineType, "/"),
 		Region:              util.TrimmedString(*job.instance.Zone, "/"),
 		Platform:            job.instance.GetCpuPlatform(),
-		OptimizationLoading: false,
+		OptimizationLoading: true,
 		Preferences:         preferences.DefaultComputeEnginePreferences,
 		Skipped:             false,
 		LazyLoadingEnabled:  false,
 		SkipReason:          "NA",
+		Instance:            job.instance,
 		Disks:               job.disks,
 		Metrics:             instanceMetrics,
 		DisksMetrics:        disksMetrics,
