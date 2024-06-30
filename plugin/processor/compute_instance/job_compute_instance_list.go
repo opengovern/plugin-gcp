@@ -84,6 +84,7 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 
 		job.processor.items.Set(oi.Id, oi)
 		job.processor.publishOptimizationItem(oi.ToOptimizationItem())
+		job.processor.UpdateSummary(oi.Id)
 
 		job.processor.jobQueue.Push(NewGetComputeInstanceMetricsJob(job.processor, instance, disks))
 	}

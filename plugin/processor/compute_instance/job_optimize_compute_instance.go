@@ -107,6 +107,7 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 
 	job.processor.items.Set(job.item.Id, job.item)
 	job.processor.publishOptimizationItem(job.item.ToOptimizationItem())
+	job.processor.UpdateSummary(job.item.Id)
 
 	return nil
 }
