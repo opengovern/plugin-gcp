@@ -46,11 +46,6 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 	endTime := time.Now()                         // end time of requested time series
 	startTime := endTime.Add(-24 * 1 * time.Hour) // start time of requested time series
 
-	// metricName string,
-	// instanceID string,
-	// startTime time.Time,
-	// endTime time.Time,
-	// periodInSeconds int64,
 	cpuRequest := job.processor.metricProvider.NewTimeSeriesRequest(
 		fmt.Sprintf(
 			`metric.type="%s" AND resource.labels.instance_id="%s"`,
@@ -97,6 +92,108 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		return err
 	}
 
+	disksMetrics := make(map[string]map[string][]kaytu.Datapoint)
+	for _, disk := range job.disks {
+		id := strconv.FormatUint(disk.Id, 10)
+		disksMetrics[id] = make(map[string][]kaytu.Datapoint)
+
+		diskReadIopsRequest := job.processor.metricProvider.NewTimeSeriesRequest(
+			fmt.Sprintf(
+				`metric.type="%s" AND resource.labels.instance_id="%s" AND metric.labels.device_name="%s"`,
+				"compute.googleapis.com/instance/disk/read_ops_count",
+				fmt.Sprint(job.instance.GetId()), disk.Name),
+			&monitoringpb.TimeInterval{
+				EndTime:   timestamppb.New(endTime),
+				StartTime: timestamppb.New(startTime),
+			},
+			&monitoringpb.Aggregation{
+				AlignmentPeriod: &durationpb.Duration{
+					Seconds: 60,
+				},
+				PerSeriesAligner: monitoringpb.Aggregation_ALIGN_MEAN, // will represent all the datapoints in the above period, with a mean
+			},
+		)
+
+		diskReadIopsMetrics, err := job.processor.metricProvider.GetMetric(diskReadIopsRequest)
+		if err != nil {
+			return err
+		}
+
+		disksMetrics[id]["DiskReadIOPS"] = diskReadIopsMetrics
+
+		diskWriteIopsRequest := job.processor.metricProvider.NewTimeSeriesRequest(
+			fmt.Sprintf(
+				`metric.type="%s" AND resource.labels.instance_id="%s" AND metric.labels.device_name="%s"`,
+				"compute.googleapis.com/instance/disk/write_ops_count",
+				fmt.Sprint(job.instance.GetId()), disk.Name),
+			&monitoringpb.TimeInterval{
+				EndTime:   timestamppb.New(endTime),
+				StartTime: timestamppb.New(startTime),
+			},
+			&monitoringpb.Aggregation{
+				AlignmentPeriod: &durationpb.Duration{
+					Seconds: 60,
+				},
+				PerSeriesAligner: monitoringpb.Aggregation_ALIGN_MEAN, // will represent all the datapoints in the above period, with a mean
+			},
+		)
+
+		diskWriteIopsMetrics, err := job.processor.metricProvider.GetMetric(diskWriteIopsRequest)
+		if err != nil {
+			return err
+		}
+
+		disksMetrics[id]["DiskWriteIOPS"] = diskWriteIopsMetrics
+
+		diskReadThroughputRequest := job.processor.metricProvider.NewTimeSeriesRequest(
+			fmt.Sprintf(
+				`metric.type="%s" AND resource.labels.instance_id="%s" AND metric.labels.device_name="%s"`,
+				"compute.googleapis.com/instance/disk/read_bytes_count",
+				fmt.Sprint(job.instance.GetId()), disk.Name),
+			&monitoringpb.TimeInterval{
+				EndTime:   timestamppb.New(endTime),
+				StartTime: timestamppb.New(startTime),
+			},
+			&monitoringpb.Aggregation{
+				AlignmentPeriod: &durationpb.Duration{
+					Seconds: 60,
+				},
+				PerSeriesAligner: monitoringpb.Aggregation_ALIGN_MEAN, // will represent all the datapoints in the above period, with a mean
+			},
+		)
+
+		diskReadThroughputMetrics, err := job.processor.metricProvider.GetMetric(diskReadThroughputRequest)
+		if err != nil {
+			return err
+		}
+
+		disksMetrics[id]["DiskReadThroughput"] = diskReadThroughputMetrics
+
+		diskWriteThroughputRequest := job.processor.metricProvider.NewTimeSeriesRequest(
+			fmt.Sprintf(
+				`metric.type="%s" AND resource.labels.instance_id="%s" AND metric.labels.device_name="%s"`,
+				"compute.googleapis.com/instance/disk/write_bytes_count",
+				fmt.Sprint(job.instance.GetId()), disk.Name),
+			&monitoringpb.TimeInterval{
+				EndTime:   timestamppb.New(endTime),
+				StartTime: timestamppb.New(startTime),
+			},
+			&monitoringpb.Aggregation{
+				AlignmentPeriod: &durationpb.Duration{
+					Seconds: 60,
+				},
+				PerSeriesAligner: monitoringpb.Aggregation_ALIGN_MEAN, // will represent all the datapoints in the above period, with a mean
+			},
+		)
+
+		diskWriteThroughputMetrics, err := job.processor.metricProvider.GetMetric(diskWriteThroughputRequest)
+		if err != nil {
+			return err
+		}
+
+		disksMetrics[id]["DiskWriteThroughput"] = diskWriteThroughputMetrics
+	}
+
 	instanceMetrics := make(map[string][]kaytu.Datapoint)
 
 	instanceMetrics["cpuUtilization"] = cpumetric
@@ -109,17 +206,21 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		MachineType:         util.TrimmedString(*job.instance.MachineType, "/"),
 		Region:              util.TrimmedString(*job.instance.Zone, "/"),
 		Platform:            job.instance.GetCpuPlatform(),
-		OptimizationLoading: false,
+		OptimizationLoading: true,
 		Preferences:         preferences.DefaultComputeEnginePreferences,
 		Skipped:             false,
 		LazyLoadingEnabled:  false,
 		SkipReason:          "NA",
+		Instance:            job.instance,
 		Disks:               job.disks,
 		Metrics:             instanceMetrics,
+		DisksMetrics:        disksMetrics,
 	}
 
-	for k, v := range oi.Metrics {
-		log.Printf("%s : %d", k, len(v))
+	for d, v := range oi.DisksMetrics {
+		for k, v := range v {
+			log.Printf("%s %s : %d", d, k, len(v))
+		}
 	}
 
 	job.processor.items.Set(oi.Id, oi)

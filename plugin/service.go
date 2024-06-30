@@ -179,6 +179,17 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 		})
 	}
 
+	publishNonInteractiveExport := func(ex *golang.NonInteractiveExport) {
+		err := p.stream.Send(&golang.PluginMessage{
+			PluginMessage: &golang.PluginMessage_NonInteractive{
+				NonInteractive: ex,
+			},
+		})
+		if err != nil {
+			log.Printf("failed to send non interactive export: %v", err)
+		}
+	}
+
 	publishResultsReady(false)
 
 	if cmd == "compute-instance" {
@@ -194,6 +205,7 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 		return fmt.Errorf("invalid command: %s", cmd)
 	}
 	jobQueue.SetOnFinish(func(ctx context.Context) {
+		publishNonInteractiveExport(p.processor.ExportNonInteractive())
 		publishResultsReady(true)
 	})
 

@@ -39,31 +39,39 @@ type GcpComputeInstanceRightsizingRecommendation struct {
 }
 
 type GcpComputeInstanceWastageRequest struct {
-	RequestId        *string                `json:"requestId"`
-	CliVersion       *string                `json:"cliVersion"`
-	Identification   map[string]string      `json:"identification"`
-	Instance         GcpComputeInstance     `json:"instance"`
-	Disks            []GcpComputeDisk       `json:"disks"`
-	Metrics          map[string][]Datapoint `json:"metrics"`
-	DiskCapacityUsed map[string]float64     `json:"diskCapacityUsed"`
-	Region           string                 `json:"region"`
-	Preferences      map[string]*string     `json:"preferences"`
-	Loading          bool                   `json:"loading"`
+	RequestId      *string                           `json:"requestId"`
+	CliVersion     *string                           `json:"cliVersion"`
+	Identification map[string]string                 `json:"identification"`
+	Instance       GcpComputeInstance                `json:"instance"`
+	Disks          []GcpComputeDisk                  `json:"disks"`
+	Metrics        map[string][]Datapoint            `json:"metrics"`
+	DisksMetrics   map[string]map[string][]Datapoint `json:"diskMetrics"`
+	Region         string                            `json:"region"`
+	Preferences    map[string]*string                `json:"preferences"`
+	Loading        bool                              `json:"loading"`
 }
 
 type RightsizingGcpComputeDisk struct {
-	Zone     string  `json:"zone"`
-	Region   string  `json:"region"`
-	DiskType string  `json:"diskType"`
-	DiskSize *int64  `json:"diskSize"`
-	Cost     float64 `json:"cost"`
+	Zone                 string  `json:"zone"`
+	Region               string  `json:"region"`
+	DiskType             string  `json:"diskType"`
+	DiskSize             int64   `json:"diskSize"`
+	ReadIopsLimit        int64   `json:"readIopsLimit"`
+	WriteIopsLimit       int64   `json:"writeIopsLimit"`
+	ReadThroughputLimit  float64 `json:"readThroughputLimit"`
+	WriteThroughputLimit float64 `json:"writeThroughputLimit"`
+
+	Cost float64 `json:"cost"`
 }
 
 type GcpComputeDiskRecommendation struct {
 	Current     RightsizingGcpComputeDisk
 	Recommended *RightsizingGcpComputeDisk
 
-	UsedCapacity float64 `json:"usedCapacity"`
+	ReadIops        Usage `json:"readIops"`
+	WriteIops       Usage `json:"writeIops"`
+	ReadThroughput  Usage `json:"readThroughput"`
+	WriteThroughput Usage `json:"writeThroughput"`
 
 	Description string `json:"description"`
 }
