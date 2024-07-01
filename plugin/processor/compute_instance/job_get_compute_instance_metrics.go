@@ -3,12 +3,11 @@ package compute_instance
 import (
 	"context"
 	"fmt"
+	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
 	"google.golang.org/api/compute/v1"
 	"log"
 	"strconv"
 	"time"
-
-	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
 
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
@@ -92,10 +91,10 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		return err
 	}
 
-	disksMetrics := make(map[string]map[string][]kaytu.Datapoint)
+	disksMetrics := make(map[string]map[string][]*golang2.DataPoint)
 	for _, disk := range job.disks {
 		id := strconv.FormatUint(disk.Id, 10)
-		disksMetrics[id] = make(map[string][]kaytu.Datapoint)
+		disksMetrics[id] = make(map[string][]*golang2.DataPoint)
 
 		diskReadIopsRequest := job.processor.metricProvider.NewTimeSeriesRequest(
 			fmt.Sprintf(
@@ -194,7 +193,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		disksMetrics[id]["DiskWriteThroughput"] = diskWriteThroughputMetrics
 	}
 
-	instanceMetrics := make(map[string][]kaytu.Datapoint)
+	instanceMetrics := make(map[string][]*golang2.DataPoint)
 
 	instanceMetrics["cpuUtilization"] = cpumetric
 	instanceMetrics["memoryUtilization"] = memoryMetric
