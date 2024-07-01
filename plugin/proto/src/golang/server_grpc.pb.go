@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Optimization_GCPComputeOptimization_FullMethodName = "/pluginkubernetes.optimization.v1.Optimization/GCPComputeOptimization"
+	Optimization_GCPComputeOptimization_FullMethodName = "/plugingcp.optimization.v1.Optimization/GCPComputeOptimization"
 )
 
 // OptimizationClient is the client API for Optimization service.
@@ -96,7 +96,7 @@ func _Optimization_GCPComputeOptimization_Handler(srv interface{}, ctx context.C
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Optimization_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "pluginkubernetes.optimization.v1.Optimization",
+	ServiceName: "plugingcp.optimization.v1.Optimization",
 	HandlerType: (*OptimizationServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
