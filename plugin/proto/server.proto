@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package pluginkubernetes.optimization.v1;
+option go_package="github.com/kaytu-io/plugin-kubernetes-internal/plugin/proto/src/golang";
+import "google/protobuf/wrappers.proto";
+
+// Requests
+
+message GcpComputeInstance {
+  string id = 1;
+  string zone = 2;
+  string machine_type = 3;
+}
+
+message GcpComputeDisk {
+  string id = 1;
+  string zone = 2;
+  string region = 3;
+  string disk_type = 4;
+  google.protobuf.Int64Value size_gb = 5;
+  google.protobuf.Int64Value provisioned_iops = 6;
+}
+
+message DataPoint {
+  google.protobuf.Int64Value start_time = 1;
+  google.protobuf.Int64Value end_time = 2;
+  double value = 3;
+}
+
+message Metric {
+  repeated DataPoint data = 1;
+}
+
+message DiskMetrics {
+  map<string,Metric> metrics = 1;
+}
+
+message GCPComputeOptimizationRequest {
+  google.protobuf.StringValue request_id = 1;
+  google.protobuf.StringValue cli_version = 2;
+  map<string,string> identification = 3;
+  GcpComputeInstance instance = 4;
+  repeated GcpComputeDisk disks = 5;
+  map<string,google.protobuf.StringValue> preferences = 6;
+  map<string,Metric> metrics = 7;
+  map<string,DiskMetrics> disks_metrics = 8;
+  bool loading = 9;
+  string region = 10;
+}
+
+// Responses
+message Usage {
+  google.protobuf.DoubleValue avg = 1;
+  google.protobuf.DoubleValue max = 2;
+  google.protobuf.DoubleValue min = 3;
+}
+
+message RightsizingGcpComputeDisk {
+  string zone = 1;
+  string region = 2;
+  string disk_type = 3;
+  int64 disk_size = 4;
+  int64 read_iops_limit = 5;
+  int64 write_iops_limit = 6;
+  double read_throughput_limit = 7;
+  double write_throughput_limit = 8;
+  double cost = 9;
+}
+
+message RightsizingGcpComputeInstance {
+  string zone = 1;
+  string region = 2;
+  string machine_type = 3;
+  string machine_family = 4;
+  int64 cpu = 5;
+  int64 memory_mb = 6;
+  double cost = 7;
+}
+
+message GcpComputeInstanceRightsizingRecommendation {
+    RightsizingGcpComputeInstance current = 1;
+    RightsizingGcpComputeInstance recommended = 2;
+    Usage cpu = 3;
+    Usage memory = 4;
+    string description = 5;
+}
+
+message GcpComputeDiskRecommendation {
+    RightsizingGcpComputeDisk current = 1;
+    RightsizingGcpComputeDisk recommended = 2;
+    Usage read_iops = 3;
+    Usage write_iops = 4;
+    Usage read_throughput = 5;
+    Usage write_throughput = 6;
+    string description = 7;
+}
+
+message GCPComputeOptimizationResponse {
+  GcpComputeInstanceRightsizingRecommendation rightsizing = 1;
+  map<string,GcpComputeDiskRecommendation> volumes_rightsizing = 2;
+}
+
+service Optimization {
+  rpc GCPComputeOptimization(GCPComputeOptimizationRequest) returns (GCPComputeOptimizationResponse);
+}
