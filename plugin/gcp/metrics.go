@@ -3,8 +3,9 @@ package gcp
 import (
 	"context"
 	"fmt"
-	"github.com/kaytu-io/plugin-gcp/plugin/kaytu"
+	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
 	"google.golang.org/api/iterator"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	monitoring "cloud.google.com/go/monitoring/apiv3/v2"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
@@ -59,8 +60,8 @@ func (c *CloudMonitoring) NewTimeSeriesRequest(
 
 }
 
-func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest) ([]kaytu.Datapoint, error) {
-	var dps []kaytu.Datapoint
+func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest) ([]*golang2.DataPoint, error) {
+	var dps []*golang2.DataPoint
 
 	it := c.client.ListTimeSeries(context.Background(), request)
 	for {
@@ -80,13 +81,13 @@ func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest)
 
 }
 
-func convertDatapoints(resp *monitoringpb.TimeSeries) []kaytu.Datapoint {
-	var dps []kaytu.Datapoint
+func convertDatapoints(resp *monitoringpb.TimeSeries) []*golang2.DataPoint {
+	var dps []*golang2.DataPoint
 	for _, dp := range resp.GetPoints() {
-		dps = append(dps, kaytu.Datapoint{
+		dps = append(dps, &golang2.DataPoint{
 			Value:     dp.GetValue().GetDoubleValue(),
-			StartTime: dp.GetInterval().GetStartTime().AsTime(),
-			EndTime:   dp.GetInterval().GetEndTime().AsTime(),
+			StartTime: wrapperspb.Int64(dp.GetInterval().GetStartTime().GetSeconds()),
+			EndTime:   wrapperspb.Int64(dp.GetInterval().GetEndTime().GetSeconds()),
 		})
 	}
 	return dps

@@ -3,6 +3,11 @@ package plugin
 import (
 	"context"
 	"fmt"
+	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
+	"golang.org/x/oauth2"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/oauth"
 	"log"
 
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
@@ -192,6 +197,18 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 
 	publishResultsReady(false)
 
+	conn, err := grpc.NewClient("gapi.kaytu.io:443",
+		grpc.WithTransportCredentials(credentials.NewTLS(nil)),
+		grpc.WithPerRPCCredentials(oauth.TokenSource{
+			TokenSource: oauth2.StaticTokenSource(&oauth2.Token{
+				AccessToken: kaytuAccessToken,
+			}),
+		}))
+	if err != nil {
+		return err
+	}
+	client := golang2.NewOptimizationClient(conn)
+
 	if cmd == "compute-instance" {
 		p.processor = compute_instance.NewComputeInstanceProcessor(
 			gcpProvider,
@@ -200,6 +217,7 @@ func (p *GCPPlugin) StartProcess(cmd string, flags map[string]string, kaytuAcces
 			publishResultSummary,
 			kaytuAccessToken,
 			jobQueue,
+			client,
 		)
 	} else {
 		return fmt.Errorf("invalid command: %s", cmd)

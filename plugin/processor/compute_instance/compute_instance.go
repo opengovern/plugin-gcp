@@ -2,16 +2,16 @@ package compute_instance
 
 import (
 	"fmt"
+	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
+	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
 	"github.com/kaytu-io/kaytu/pkg/style"
 	"github.com/kaytu-io/kaytu/pkg/utils"
+	"github.com/kaytu-io/plugin-gcp/plugin/gcp"
+	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
+	util "github.com/kaytu-io/plugin-gcp/utils"
 	"strconv"
 	"strings"
 	"sync/atomic"
-
-	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
-	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
-	"github.com/kaytu-io/plugin-gcp/plugin/gcp"
-	util "github.com/kaytu-io/plugin-gcp/utils"
 )
 
 type ComputeInstanceProcessor struct {
@@ -23,6 +23,7 @@ type ComputeInstanceProcessor struct {
 	kaytuAcccessToken       string
 	jobQueue                *sdk.JobQueue
 	lazyloadCounter         atomic.Uint32
+	client                  golang2.OptimizationClient
 
 	summary util.ConcurrentMap[string, ComputeInstanceSummary]
 }
@@ -34,6 +35,7 @@ func NewComputeInstanceProcessor(
 	publishResultSummary func(summary *golang.ResultSummary),
 	kaytuAcccessToken string,
 	jobQueue *sdk.JobQueue,
+	client golang2.OptimizationClient,
 ) *ComputeInstanceProcessor {
 	r := &ComputeInstanceProcessor{
 		provider:                prv,
@@ -44,6 +46,7 @@ func NewComputeInstanceProcessor(
 		kaytuAcccessToken:       kaytuAcccessToken,
 		jobQueue:                jobQueue,
 		lazyloadCounter:         atomic.Uint32{},
+		client:                  client,
 	}
 
 	jobQueue.Push(NewListComputeInstancesJob(r))
