@@ -17,7 +17,7 @@ message GcpComputeDisk {
   string zone = 2;
   string region = 3;
   string disk_type = 4;
-  google.protobuf.Int64Value size_gb = 5;
+  google.protobuf.Int64Value disk_size = 5;
   google.protobuf.Int64Value provisioned_iops = 6;
 }
 
