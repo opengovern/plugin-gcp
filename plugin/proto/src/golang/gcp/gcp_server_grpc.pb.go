@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.12.4
-// source: plugin/proto/server.proto
+// source: plugin/proto/gcp_server.proto
 
 package golang
 
@@ -105,5 +105,5 @@ var Optimization_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "plugin/proto/server.proto",
+	Metadata: "plugin/proto/gcp_server.proto",
 }
