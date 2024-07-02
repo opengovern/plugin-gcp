@@ -4,7 +4,7 @@
 // - protoc             v3.12.4
 // source: plugin/proto/gcp_server.proto
 
-package golang
+package gcp
 
 import (
 	context "context"
