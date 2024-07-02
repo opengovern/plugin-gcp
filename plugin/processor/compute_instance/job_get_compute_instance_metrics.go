@@ -3,7 +3,7 @@ package compute_instance
 import (
 	"context"
 	"fmt"
-	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
+	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	"google.golang.org/api/compute/v1"
 	"log"
 	"strconv"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/kaytu-io/plugin-gcp/plugin/processor/shared"
-	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang"
+	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"strconv"
