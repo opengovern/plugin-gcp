@@ -1,7 +1,6 @@
 package gcp
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
@@ -30,10 +29,12 @@ func TestGetMetrics(t *testing.T) {
 			"https://www.googleapis.com/auth/monitoring.read",
 		},
 	)
-	err := metric.InitializeClient(context.Background())
+	err := metric.InitializeClient(ctx)
 	if err != nil {
 		t.Errorf("[%s]: %s", t.Name(), err.Error())
+		return
 	}
+	defer metric.CloseClient()
 
 	// creating the metric request for the instance
 	memoryRequest := metric.NewTimeSeriesRequest(
@@ -55,9 +56,10 @@ func TestGetMetrics(t *testing.T) {
 	)
 
 	// execute the request
-	resp, err := metric.GetMetric(memoryRequest)
+	resp, err := metric.GetMetric(ctx, memoryRequest)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	// log.Printf("metrics: %s", resp.GetMetric().String())
@@ -69,6 +71,4 @@ func TestGetMetrics(t *testing.T) {
 	// for _, point := range resp.Points {
 	// 	log.Printf("Point : %.0f", point.GetValue().GetDoubleValue())
 	// }
-
-	metric.CloseClient()
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/kaytu-io/kaytu/pkg/utils"
 	"github.com/kaytu-io/plugin-gcp/plugin/gcp"
 	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
-	util "github.com/kaytu-io/plugin-gcp/utils"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -17,7 +16,7 @@ import (
 type ComputeInstanceProcessor struct {
 	provider                *gcp.Compute
 	metricProvider          *gcp.CloudMonitoring
-	items                   util.ConcurrentMap[string, ComputeInstanceItem]
+	items                   utils.ConcurrentMap[string, ComputeInstanceItem]
 	publishOptimizationItem func(item *golang.ChartOptimizationItem)
 	publishResultSummary    func(summary *golang.ResultSummary)
 	kaytuAcccessToken       string
@@ -25,7 +24,9 @@ type ComputeInstanceProcessor struct {
 	lazyloadCounter         atomic.Uint32
 	client                  golang2.OptimizationClient
 
-	summary util.ConcurrentMap[string, ComputeInstanceSummary]
+	defaultPreferences []*golang.PreferenceItem
+
+	summary utils.ConcurrentMap[string, ComputeInstanceSummary]
 }
 
 func NewComputeInstanceProcessor(
@@ -36,17 +37,19 @@ func NewComputeInstanceProcessor(
 	kaytuAcccessToken string,
 	jobQueue *sdk.JobQueue,
 	client golang2.OptimizationClient,
+	defaultPreferences []*golang.PreferenceItem,
 ) *ComputeInstanceProcessor {
 	r := &ComputeInstanceProcessor{
 		provider:                prv,
 		metricProvider:          metricPrv,
-		items:                   util.NewMap[string, ComputeInstanceItem](),
+		items:                   utils.NewConcurrentMap[string, ComputeInstanceItem](),
 		publishOptimizationItem: publishOptimizationItem,
 		publishResultSummary:    publishResultSummary,
 		kaytuAcccessToken:       kaytuAcccessToken,
 		jobQueue:                jobQueue,
 		lazyloadCounter:         atomic.Uint32{},
 		client:                  client,
+		defaultPreferences:      defaultPreferences,
 	}
 
 	jobQueue.Push(NewListComputeInstancesJob(r))
@@ -59,7 +62,7 @@ func (m *ComputeInstanceProcessor) ReEvaluate(id string, items []*golang.Prefere
 	m.items.Set(id, v)
 	v.OptimizationLoading = true
 	m.publishOptimizationItem(v.ToOptimizationItem())
-	m.jobQueue.Push(NewOptimizeComputeInstancesJob(m, v))
+	m.jobQueue.Push(NewOptimizeComputeInstancesJob(m, id))
 }
 
 func (m *ComputeInstanceProcessor) ExportNonInteractive() *golang.NonInteractiveExport {

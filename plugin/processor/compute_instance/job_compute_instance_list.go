@@ -2,12 +2,12 @@ package compute_instance
 
 import (
 	"context"
+	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
 	"google.golang.org/api/compute/v1"
 	"log"
 	"strconv"
 	"strings"
 
-	"github.com/kaytu-io/plugin-gcp/plugin/preferences"
 	util "github.com/kaytu-io/plugin-gcp/utils"
 )
 
@@ -21,20 +21,18 @@ func NewListComputeInstancesJob(processor *ComputeInstanceProcessor) *ListComput
 	}
 }
 
-func (job *ListComputeInstancesJob) Id() string {
-	return "list_compute_instances"
-}
-
-func (job *ListComputeInstancesJob) Description() string {
-	return "List all compute instances in current project"
-
+func (job *ListComputeInstancesJob) Properties() sdk.JobProperties {
+	return sdk.JobProperties{
+		ID:          "list_compute_instances",
+		Description: "List all compute instances in current project",
+		MaxRetry:    0,
+	}
 }
 
 func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
-
 	log.Println("Running list compute instance job")
 
-	instances, err := job.processor.provider.GetAllInstances()
+	instances, err := job.processor.provider.GetAllInstances(ctx)
 	if err != nil {
 		return err
 	}
@@ -50,7 +48,7 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 			zoneURLParts := strings.Split(*instance.Zone, "/")
 			instanceZone := zoneURLParts[len(zoneURLParts)-1]
 
-			diskDetails, err := job.processor.provider.GetDiskDetails(instanceZone, diskName)
+			diskDetails, err := job.processor.provider.GetDiskDetails(ctx, instanceZone, diskName)
 			if err != nil {
 				return err
 			}
@@ -65,7 +63,7 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 			Region:              util.TrimmedString(*instance.Zone, "/"),
 			Platform:            instance.GetCpuPlatform(),
 			OptimizationLoading: true,
-			Preferences:         preferences.DefaultComputeEnginePreferences,
+			Preferences:         job.processor.defaultPreferences,
 			Skipped:             false,
 			LazyLoadingEnabled:  false,
 			SkipReason:          "NA",
@@ -86,7 +84,7 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 		job.processor.publishOptimizationItem(oi.ToOptimizationItem())
 		job.processor.UpdateSummary(oi.Id)
 
-		job.processor.jobQueue.Push(NewGetComputeInstanceMetricsJob(job.processor, instance, disks))
+		job.processor.jobQueue.Push(NewGetComputeInstanceMetricsJob(job.processor, oi.Id))
 	}
 
 	return nil

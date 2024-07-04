@@ -28,7 +28,7 @@ type ComputeInstanceItem struct {
 	Disks               []compute.Disk
 	Metrics             map[string][]*golang2.DataPoint
 	DisksMetrics        map[string]map[string][]*golang2.DataPoint
-	Wastage             golang2.GCPComputeOptimizationResponse
+	Wastage             *golang2.GCPComputeOptimizationResponse
 }
 
 func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[string]*golang.Properties) {
@@ -48,58 +48,50 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 		Value: "Compute Instance",
 	}
 
-	row.Values["current_cost"] = &golang.ChartRowItem{
-		Value: utils.FormatPriceFloat(i.Wastage.Rightsizing.Current.Cost),
-	}
-
-	RegionProperty := &golang.Property{
-		Key:     "Region",
-		Current: i.Wastage.Rightsizing.Current.Region,
-	}
-
-	MachineTypeProperty := &golang.Property{
-		Key:     "Machine Type",
-		Current: i.Wastage.Rightsizing.Current.MachineType,
-	}
-	MachineFamilyProperty := &golang.Property{
-		Key:     "Machine Family",
-		Current: i.Wastage.Rightsizing.Current.MachineFamily,
-	}
-	CPUProperty := &golang.Property{
-		Key:     "  CPU",
-		Current: fmt.Sprintf("%d", i.Wastage.Rightsizing.Current.Cpu),
-		Average: utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Cpu.Avg)),
-		Max:     utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Cpu.Max)),
-	}
-
-	memoryProperty := &golang.Property{
-		Key:     "  MemoryMB",
-		Current: fmt.Sprintf("%d MB", i.Wastage.Rightsizing.Current.MemoryMb),
-		Average: utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Memory.Avg)),
-		Max:     utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Memory.Max)),
-	}
-
 	row.Values["project_id"] = &golang.ChartRowItem{
 		Value: i.ProjectId,
 	}
 
-	row.Values["current_cost"] = &golang.ChartRowItem{
-		Value: utils.FormatPriceFloat(i.Wastage.Rightsizing.Current.Cost),
-	}
+	RegionProperty := &golang.Property{Key: "Region"}
+	MachineTypeProperty := &golang.Property{Key: "Machine Type"}
+	MachineFamilyProperty := &golang.Property{Key: "Machine Family"}
+	CPUProperty := &golang.Property{Key: "  CPU"}
+	MemoryProperty := &golang.Property{Key: "  MemoryMB"}
 
-	if i.Wastage.Rightsizing.Recommended != nil {
-		row.Values["right_sized_cost"] = &golang.ChartRowItem{
-			Value: utils.FormatPriceFloat(i.Wastage.Rightsizing.Recommended.Cost),
-		}
-		row.Values["savings"] = &golang.ChartRowItem{
-			Value: utils.FormatPriceFloat(i.Wastage.Rightsizing.Current.Cost - i.Wastage.Rightsizing.Recommended.Cost),
-		}
-		RegionProperty.Recommended = i.Wastage.Rightsizing.Recommended.Region
-		MachineTypeProperty.Recommended = i.Wastage.Rightsizing.Recommended.MachineType
-		CPUProperty.Recommended = fmt.Sprintf("%d", i.Wastage.Rightsizing.Recommended.Cpu)
-		memoryProperty.Recommended = fmt.Sprintf("%d MB", i.Wastage.Rightsizing.Recommended.MemoryMb)
-	}
+	if i.Wastage != nil {
+		RegionProperty.Current = i.Wastage.Rightsizing.Current.Region
+		MachineTypeProperty.Current = i.Wastage.Rightsizing.Current.MachineType
+		MachineFamilyProperty.Current = i.Wastage.Rightsizing.Current.MachineFamily
 
+		CPUProperty.Current = fmt.Sprintf("%d", i.Wastage.Rightsizing.Current.Cpu)
+		CPUProperty.Average = utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Cpu.Avg))
+		CPUProperty.Max = utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Cpu.Max))
+
+		MemoryProperty.Current = fmt.Sprintf("%d MB", i.Wastage.Rightsizing.Current.MemoryMb)
+		MemoryProperty.Average = utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Memory.Avg))
+		MemoryProperty.Max = utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Memory.Max))
+
+		row.Values["current_cost"] = &golang.ChartRowItem{
+			Value: utils.FormatPriceFloat(i.Wastage.Rightsizing.Current.Cost),
+		}
+
+		row.Values["current_cost"] = &golang.ChartRowItem{
+			Value: utils.FormatPriceFloat(i.Wastage.Rightsizing.Current.Cost),
+		}
+
+		if i.Wastage.Rightsizing.Recommended != nil {
+			row.Values["right_sized_cost"] = &golang.ChartRowItem{
+				Value: utils.FormatPriceFloat(i.Wastage.Rightsizing.Recommended.Cost),
+			}
+			row.Values["savings"] = &golang.ChartRowItem{
+				Value: utils.FormatPriceFloat(i.Wastage.Rightsizing.Current.Cost - i.Wastage.Rightsizing.Recommended.Cost),
+			}
+			RegionProperty.Recommended = i.Wastage.Rightsizing.Recommended.Region
+			MachineTypeProperty.Recommended = i.Wastage.Rightsizing.Recommended.MachineType
+			CPUProperty.Recommended = fmt.Sprintf("%d", i.Wastage.Rightsizing.Recommended.Cpu)
+			MemoryProperty.Recommended = fmt.Sprintf("%d MB", i.Wastage.Rightsizing.Recommended.MemoryMb)
+		}
+	}
 	props := make(map[string]*golang.Properties)
 	properties := &golang.Properties{}
 
@@ -110,7 +102,7 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 		Key: "Compute",
 	})
 	properties.Properties = append(properties.Properties, CPUProperty)
-	properties.Properties = append(properties.Properties, memoryProperty)
+	properties.Properties = append(properties.Properties, MemoryProperty)
 
 	props[i.Id] = properties
 
@@ -123,8 +115,6 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 
 	for _, d := range i.Disks {
 		key := strconv.FormatUint(d.Id, 10)
-		disk := i.Wastage.VolumesRightsizing[key]
-
 		row := golang.ChartRow{
 			RowId:  key,
 			Values: make(map[string]*golang.ChartRowItem),
@@ -144,62 +134,55 @@ func (i ComputeInstanceItem) ComputeDiskDevice() ([]*golang.ChartRow, map[string
 			Value: "Compute Disk",
 		}
 
-		row.Values["current_cost"] = &golang.ChartRowItem{
-			Value: utils.FormatPriceFloat(disk.Current.Cost),
-		}
+		RegionProperty := &golang.Property{Key: "Region"}
+		DiskTypeProperty := &golang.Property{Key: "Disk Type"}
+		DiskSizeProperty := &golang.Property{Key: "Disk Size"}
+		DiskReadIopsProperty := &golang.Property{Key: "  Read IOPS Expectation"}
+		DiskWriteIopsProperty := &golang.Property{Key: "  Write IOPS Expectation"}
+		DiskReadThroughputProperty := &golang.Property{Key: "  Read Throughput Expectation"}
+		DiskWriteThroughputProperty := &golang.Property{Key: "  Write Throughput Expectation"}
 
-		RegionProperty := &golang.Property{
-			Key:     "Region",
-			Current: disk.Current.Region,
-		}
-
-		DiskTypeProperty := &golang.Property{
-			Key:     "Disk Type",
-			Current: disk.Current.DiskType,
-		}
-		DiskSizeProperty := &golang.Property{
-			Key:     "Disk Size",
-			Current: fmt.Sprintf("%d GB", disk.Current.DiskSize),
-		}
-		DiskReadIopsProperty := &golang.Property{
-			Key:     "  Read IOPS Expectation",
-			Current: fmt.Sprintf("%d", disk.Current.ReadIopsLimit),
-			Average: utils.PFloat64ToString(PWrapperDouble(disk.ReadIops.Avg)),
-			Max:     utils.PFloat64ToString(PWrapperDouble(disk.ReadIops.Max)),
-		}
-		DiskWriteIopsProperty := &golang.Property{
-			Key:     "  Write IOPS Expectation",
-			Current: fmt.Sprintf("%d", disk.Current.WriteIopsLimit),
-			Average: utils.PFloat64ToString(PWrapperDouble(disk.WriteIops.Avg)),
-			Max:     utils.PFloat64ToString(PWrapperDouble(disk.WriteIops.Max)),
-		}
-		DiskReadThroughputProperty := &golang.Property{
-			Key:     "  Read Throughput Expectation",
-			Current: fmt.Sprintf("%.2f Mb", disk.Current.ReadThroughputLimit),
-			Average: fmt.Sprintf("%s Mb", utils.PFloat64ToString(PWrapperDouble(disk.ReadThroughput.Avg))),
-			Max:     fmt.Sprintf("%s Mb", utils.PFloat64ToString(PWrapperDouble(disk.ReadThroughput.Max))),
-		}
-		DiskWriteThroughputProperty := &golang.Property{
-			Key:     "  Write Throughput Expectation",
-			Current: fmt.Sprintf("%.2f Mb", disk.Current.WriteThroughputLimit),
-			Average: fmt.Sprintf("%s Mb", utils.PFloat64ToString(PWrapperDouble(disk.WriteThroughput.Avg))),
-			Max:     fmt.Sprintf("%s Mb", utils.PFloat64ToString(PWrapperDouble(disk.WriteThroughput.Max))),
-		}
-
-		if disk.Recommended != nil {
-			row.Values["right_sized_cost"] = &golang.ChartRowItem{
-				Value: utils.FormatPriceFloat(disk.Recommended.Cost),
+		if i.Wastage != nil {
+			disk := i.Wastage.VolumesRightsizing[key]
+			row.Values["current_cost"] = &golang.ChartRowItem{
+				Value: utils.FormatPriceFloat(disk.Current.Cost),
 			}
-			row.Values["savings"] = &golang.ChartRowItem{
-				Value: utils.FormatPriceFloat(disk.Current.Cost - disk.Recommended.Cost),
+
+			RegionProperty.Current = disk.Current.Region
+			DiskTypeProperty.Current = disk.Current.DiskType
+			DiskSizeProperty.Current = fmt.Sprintf("%d GB", disk.Current.DiskSize)
+
+			DiskReadIopsProperty.Current = fmt.Sprintf("%d", disk.Current.ReadIopsLimit)
+			DiskReadIopsProperty.Average = utils.PFloat64ToString(PWrapperDouble(disk.ReadIops.Avg))
+			DiskReadIopsProperty.Max = utils.PFloat64ToString(PWrapperDouble(disk.ReadIops.Max))
+
+			DiskWriteIopsProperty.Current = fmt.Sprintf("%d", disk.Current.WriteIopsLimit)
+			DiskWriteIopsProperty.Average = utils.PFloat64ToString(PWrapperDouble(disk.WriteIops.Avg))
+			DiskWriteIopsProperty.Max = utils.PFloat64ToString(PWrapperDouble(disk.WriteIops.Max))
+
+			DiskReadThroughputProperty.Current = fmt.Sprintf("%.2f Mb", disk.Current.ReadThroughputLimit)
+			DiskReadThroughputProperty.Average = utils.PFloat64ToString(PWrapperDouble(disk.ReadThroughput.Avg))
+			DiskReadThroughputProperty.Max = utils.PFloat64ToString(PWrapperDouble(disk.ReadThroughput.Max))
+
+			DiskWriteThroughputProperty.Current = fmt.Sprintf("%.2f Mb", disk.Current.WriteThroughputLimit)
+			DiskWriteThroughputProperty.Average = utils.PFloat64ToString(PWrapperDouble(disk.WriteThroughput.Avg))
+			DiskWriteThroughputProperty.Max = utils.PFloat64ToString(PWrapperDouble(disk.WriteThroughput.Max))
+
+			if disk.Recommended != nil {
+				row.Values["right_sized_cost"] = &golang.ChartRowItem{
+					Value: utils.FormatPriceFloat(disk.Recommended.Cost),
+				}
+				row.Values["savings"] = &golang.ChartRowItem{
+					Value: utils.FormatPriceFloat(disk.Current.Cost - disk.Recommended.Cost),
+				}
+				RegionProperty.Recommended = disk.Recommended.Region
+				DiskTypeProperty.Recommended = disk.Recommended.DiskType
+				DiskReadIopsProperty.Recommended = fmt.Sprintf("%d", disk.Recommended.ReadIopsLimit)
+				DiskWriteIopsProperty.Recommended = fmt.Sprintf("%d", disk.Recommended.WriteIopsLimit)
+				DiskReadThroughputProperty.Recommended = fmt.Sprintf("%.2f Mb", disk.Recommended.ReadThroughputLimit)
+				DiskWriteThroughputProperty.Recommended = fmt.Sprintf("%.2f Mb", disk.Recommended.WriteThroughputLimit)
+				DiskSizeProperty.Recommended = fmt.Sprintf("%d GB", disk.Recommended.DiskSize)
 			}
-			RegionProperty.Recommended = disk.Recommended.Region
-			DiskTypeProperty.Recommended = disk.Recommended.DiskType
-			DiskReadIopsProperty.Recommended = fmt.Sprintf("%d", disk.Recommended.ReadIopsLimit)
-			DiskWriteIopsProperty.Recommended = fmt.Sprintf("%d", disk.Recommended.WriteIopsLimit)
-			DiskReadThroughputProperty.Recommended = fmt.Sprintf("%.2f Mb", disk.Recommended.ReadThroughputLimit)
-			DiskWriteThroughputProperty.Recommended = fmt.Sprintf("%.2f Mb", disk.Recommended.WriteThroughputLimit)
-			DiskSizeProperty.Recommended = fmt.Sprintf("%d GB", disk.Recommended.DiskSize)
 		}
 
 		properties := &golang.Properties{}
@@ -252,7 +235,7 @@ func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem 
 		status = "press enter to load"
 	} else if i.OptimizationLoading {
 		status = "loading"
-	} else if i.Wastage.Rightsizing.Recommended != nil {
+	} else if i.Wastage != nil && i.Wastage.Rightsizing.Recommended != nil {
 		totalSaving := 0.0
 		totalCurrentCost := 0.0
 		totalSaving += i.Wastage.Rightsizing.Current.Cost - i.Wastage.Rightsizing.Recommended.Cost
@@ -296,11 +279,13 @@ func (i ComputeInstanceItem) ToOptimizationItem() *golang.ChartOptimizationItem 
 		DevicesChartRows:   deviceRows,
 		DevicesProperties:  deviceProps,
 		Preferences:        i.Preferences,
-		Description:        i.Wastage.Rightsizing.Description,
 		Loading:            i.OptimizationLoading,
 		Skipped:            i.Skipped,
 		SkipReason:         wrapperspb.String(i.SkipReason),
 		LazyLoadingEnabled: i.LazyLoadingEnabled,
+	}
+	if i.Wastage != nil && i.Wastage.Rightsizing != nil {
+		coi.Description = i.Wastage.Rightsizing.Description
 	}
 
 	return coi
