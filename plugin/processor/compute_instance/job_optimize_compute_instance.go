@@ -3,6 +3,7 @@ package compute_instance
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
 	"github.com/kaytu-io/plugin-gcp/plugin/processor/shared"
 	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
 	"google.golang.org/grpc/metadata"
@@ -18,28 +19,32 @@ import (
 
 type OptimizeComputeInstancesJob struct {
 	processor *ComputeInstanceProcessor
-	item      ComputeInstanceItem
+	itemId    string
 }
 
-func NewOptimizeComputeInstancesJob(processor *ComputeInstanceProcessor, item ComputeInstanceItem) *OptimizeComputeInstancesJob {
+func NewOptimizeComputeInstancesJob(processor *ComputeInstanceProcessor, itemId string) *OptimizeComputeInstancesJob {
 	return &OptimizeComputeInstancesJob{
 		processor: processor,
-		item:      item,
+		itemId:    itemId,
 	}
 }
 
-func (job *OptimizeComputeInstancesJob) Id() string {
-	return fmt.Sprintf("optimize_compute_isntance_%s", job.item.Id)
-}
-
-func (job *OptimizeComputeInstancesJob) Description() string {
-	return fmt.Sprintf("Optimizing %s", job.item.Id)
-
+func (job *OptimizeComputeInstancesJob) Properties() sdk.JobProperties {
+	return sdk.JobProperties{
+		ID:          fmt.Sprintf("optimize_compute_isntance_%s", job.itemId),
+		Description: fmt.Sprintf("Optimizing %s", job.itemId),
+		MaxRetry:    3,
+	}
 }
 
 func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
-	if job.item.LazyLoadingEnabled {
-		job.processor.jobQueue.Push(NewGetComputeInstanceMetricsJob(job.processor, job.item.Instance, job.item.Disks))
+	item, ok := job.processor.items.Get(job.itemId)
+	if !ok {
+		return fmt.Errorf("item not found %s", job.itemId)
+	}
+
+	if item.LazyLoadingEnabled {
+		job.processor.jobQueue.Push(NewGetComputeInstanceMetricsJob(job.processor, job.itemId))
 		return nil
 	}
 
@@ -47,7 +52,7 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 
 	var disks []*golang2.GcpComputeDisk
 	diskFilled := make(map[string]float64)
-	for _, disk := range job.item.Disks {
+	for _, disk := range item.Disks {
 		id := strconv.FormatUint(disk.Id, 10)
 		typeURLParts := strings.Split(disk.Type, "/")
 		diskType := typeURLParts[len(typeURLParts)-1]
@@ -68,7 +73,7 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 	}
 
 	preferencesMap := map[string]*wrapperspb.StringValue{}
-	for k, v := range preferences.Export(job.item.Preferences) {
+	for k, v := range preferences.Export(item.Preferences) {
 		preferencesMap[k] = nil
 		if v != nil {
 			preferencesMap[k] = wrapperspb.String(*v)
@@ -80,14 +85,14 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 	defer cancel()
 
 	metrics := make(map[string]*golang2.Metric)
-	for k, v := range job.item.Metrics {
+	for k, v := range item.Metrics {
 		metrics[k] = &golang2.Metric{
 			Data: v,
 		}
 	}
 
 	diskMetrics := make(map[string]*golang2.DiskMetrics)
-	for disk, m := range job.item.DisksMetrics {
+	for disk, m := range item.DisksMetrics {
 		diskM := make(map[string]*golang2.Metric)
 		for k, v := range m {
 			diskM[k] = &golang2.Metric{
@@ -104,43 +109,30 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 		CliVersion:     wrapperspb.String(version.VERSION),
 		Identification: job.processor.provider.Identify(),
 		Instance: &golang2.GcpComputeInstance{
-			Id:          utils.HashString(job.item.Id),
-			Zone:        job.item.Region,
-			MachineType: job.item.MachineType,
+			Id:          utils.HashString(item.Id),
+			Zone:        item.Region,
+			MachineType: item.MachineType,
 		},
 		Disks:        disks,
 		Preferences:  preferencesMap,
 		Metrics:      metrics,
 		DisksMetrics: diskMetrics,
 		Loading:      false,
-		Region:       job.item.Region,
+		Region:       item.Region,
 	})
 	if err != nil {
 		return err
 	}
 
-	job.item = ComputeInstanceItem{
-		ProjectId:           job.item.ProjectId,
-		Name:                job.item.Name,
-		Id:                  job.item.Id,
-		MachineType:         job.item.MachineType,
-		Region:              job.item.Region,
-		Platform:            job.item.Platform,
-		OptimizationLoading: false,
-		Preferences:         job.item.Preferences,
-		Skipped:             false,
-		LazyLoadingEnabled:  false,
-		SkipReason:          "NA",
-		Metrics:             job.item.Metrics,
-		DisksMetrics:        job.item.DisksMetrics,
-		Instance:            job.item.Instance,
-		Disks:               job.item.Disks,
-		Wastage:             *response,
-	}
+	item.OptimizationLoading = false
+	item.Skipped = false
+	item.SkipReason = "N/A"
+	item.LazyLoadingEnabled = false
+	item.Wastage = response
 
-	job.processor.items.Set(job.item.Id, job.item)
-	job.processor.publishOptimizationItem(job.item.ToOptimizationItem())
-	job.processor.UpdateSummary(job.item.Id)
+	job.processor.items.Set(job.itemId, item)
+	job.processor.publishOptimizationItem(item.ToOptimizationItem())
+	job.processor.UpdateSummary(item.Id)
 
 	return nil
 }

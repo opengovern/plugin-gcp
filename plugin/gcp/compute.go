@@ -6,6 +6,7 @@ import (
 	computeApi "cloud.google.com/go/compute/apiv1"
 	"cloud.google.com/go/compute/apiv1/computepb"
 	"context"
+	"errors"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -27,7 +28,10 @@ func NewCompute(scopes []string) *Compute {
 
 func (c *Compute) InitializeClient(ctx context.Context) error {
 
-	c.GCP.GetCredentials(ctx)
+	err := c.GCP.GetCredentials(ctx)
+	if err != nil {
+		return err
+	}
 
 	// log.Println(string(c.GCP.credentials.JSON))
 	// log.Println(c.GCP.ProjectID)
@@ -77,19 +81,19 @@ func (c *Compute) CloseClient() error {
 	return nil
 }
 
-func (c *Compute) ListAllInstances() error {
+func (c *Compute) ListAllInstances(ctx context.Context) error {
 
 	req := &computepb.AggregatedListInstancesRequest{
 		Project: c.ProjectID,
 	}
 
-	it := c.instancesClient.AggregatedList(context.Background(), req)
+	it := c.instancesClient.AggregatedList(ctx, req)
 
 	log.Println("instances found: ")
 
 	for {
 		pair, err := it.Next()
-		if err == iterator.Done {
+		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
@@ -108,7 +112,7 @@ func (c *Compute) ListAllInstances() error {
 	return nil
 }
 
-func (c *Compute) GetAllInstances() ([]*computepb.Instance, error) {
+func (c *Compute) GetAllInstances(ctx context.Context) ([]*computepb.Instance, error) {
 
 	var allInstances []*computepb.Instance
 
@@ -116,7 +120,7 @@ func (c *Compute) GetAllInstances() ([]*computepb.Instance, error) {
 		Project: c.ProjectID,
 	}
 
-	it := c.instancesClient.AggregatedList(context.Background(), req)
+	it := c.instancesClient.AggregatedList(ctx, req)
 
 	log.Println("instances found: ")
 
@@ -146,23 +150,23 @@ func (c *Compute) GetAllInstances() ([]*computepb.Instance, error) {
 	return allInstances, nil
 }
 
-func (c *Compute) GetDiskDetails(zone, diskName string) (*compute.Disk, error) {
-	disk, err := c.computeService.Disks.Get(c.ProjectID, zone, diskName).Context(context.Background()).Do()
+func (c *Compute) GetDiskDetails(ctx context.Context, zone, diskName string) (*compute.Disk, error) {
+	disk, err := c.computeService.Disks.Get(c.ProjectID, zone, diskName).Context(ctx).Do()
 	if err != nil {
 		return nil, err
 	}
 	return disk, nil
 }
 
-func (c *Compute) GetMemory(InstanceMachineType string, zone string) (*int32, error) {
+func (c *Compute) GetMemory(ctx context.Context, instanceMachineType string, zone string) (*int32, error) {
 
 	request := &computepb.GetMachineTypeRequest{
 		Project:     c.ProjectID,
-		MachineType: InstanceMachineType,
+		MachineType: instanceMachineType,
 		Zone:        zone,
 	}
 
-	machineType, err := c.machineTypeClient.Get(context.Background(), request)
+	machineType, err := c.machineTypeClient.Get(ctx, request)
 	if err != nil {
 		return nil, err
 	}

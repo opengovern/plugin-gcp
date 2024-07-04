@@ -3,44 +3,42 @@ package compute_instance
 import (
 	"context"
 	"fmt"
+	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
 	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
-	"google.golang.org/api/compute/v1"
 	"log"
 	"strconv"
 	"time"
 
-	"cloud.google.com/go/compute/apiv1/computepb"
 	"cloud.google.com/go/monitoring/apiv3/v2/monitoringpb"
-	"github.com/kaytu-io/plugin-gcp/plugin/preferences"
-	util "github.com/kaytu-io/plugin-gcp/utils"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type GetComputeInstanceMetricsJob struct {
 	processor *ComputeInstanceProcessor
-	instance  *computepb.Instance
-	disks     []compute.Disk
+	itemId    string
 }
 
-func NewGetComputeInstanceMetricsJob(processor *ComputeInstanceProcessor, instance *computepb.Instance, disks []compute.Disk) *GetComputeInstanceMetricsJob {
+func NewGetComputeInstanceMetricsJob(processor *ComputeInstanceProcessor, itemId string) *GetComputeInstanceMetricsJob {
 	return &GetComputeInstanceMetricsJob{
 		processor: processor,
-		instance:  instance,
-		disks:     disks,
+		itemId:    itemId,
 	}
 }
 
-func (job *GetComputeInstanceMetricsJob) Id() string {
-	return fmt.Sprintf("get_compute_instance_metrics_%d", job.instance.GetId())
-}
-
-func (job *GetComputeInstanceMetricsJob) Description() string {
-	return fmt.Sprintf("Get metrics for compute instance: %d", job.instance.GetId())
-
+func (job *GetComputeInstanceMetricsJob) Properties() sdk.JobProperties {
+	return sdk.JobProperties{
+		ID:          fmt.Sprintf("get_compute_instance_metrics_%s", job.itemId),
+		Description: fmt.Sprintf("Get metrics for compute instance: %s", job.itemId),
+		MaxRetry:    0,
+	}
 }
 
 func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
+	item, ok := job.processor.items.Get(job.itemId)
+	if !ok {
+		return fmt.Errorf("item not found %s", job.itemId)
+	}
 
 	endTime := time.Now()                         // end time of requested time series
 	startTime := endTime.Add(-24 * 1 * time.Hour) // start time of requested time series
@@ -49,7 +47,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		fmt.Sprintf(
 			`metric.type="%s" AND resource.labels.instance_id="%s"`,
 			"compute.googleapis.com/instance/cpu/utilization", // fully qualified name of the metric
-			fmt.Sprint(job.instance.GetId()),                  // compute instance ID
+			fmt.Sprint(item.Instance.GetId()),                 // compute instance ID
 		),
 		&monitoringpb.TimeInterval{
 			EndTime:   timestamppb.New(endTime),
@@ -63,7 +61,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		},
 	)
 
-	cpumetric, err := job.processor.metricProvider.GetMetric(cpuRequest)
+	cpumetric, err := job.processor.metricProvider.GetMetric(ctx, cpuRequest)
 	if err != nil {
 		return err
 	}
@@ -72,7 +70,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		fmt.Sprintf(
 			`metric.type="%s" AND resource.labels.instance_id="%s"`,
 			"compute.googleapis.com/instance/memory/balloon/ram_used",
-			fmt.Sprint(job.instance.GetId()),
+			fmt.Sprint(item.Instance.GetId()),
 		),
 		&monitoringpb.TimeInterval{
 			EndTime:   timestamppb.New(endTime),
@@ -86,13 +84,13 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 		},
 	)
 
-	memoryMetric, err := job.processor.metricProvider.GetMetric(memoryRequest)
+	memoryMetric, err := job.processor.metricProvider.GetMetric(ctx, memoryRequest)
 	if err != nil {
 		return err
 	}
 
 	disksMetrics := make(map[string]map[string][]*golang2.DataPoint)
-	for _, disk := range job.disks {
+	for _, disk := range item.Disks {
 		id := strconv.FormatUint(disk.Id, 10)
 		disksMetrics[id] = make(map[string][]*golang2.DataPoint)
 
@@ -100,7 +98,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 			fmt.Sprintf(
 				`metric.type="%s" AND resource.labels.instance_id="%s" AND metric.labels.device_name="%s"`,
 				"compute.googleapis.com/instance/disk/read_ops_count",
-				fmt.Sprint(job.instance.GetId()), disk.Name),
+				fmt.Sprint(item.Instance.GetId()), disk.Name),
 			&monitoringpb.TimeInterval{
 				EndTime:   timestamppb.New(endTime),
 				StartTime: timestamppb.New(startTime),
@@ -113,7 +111,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 			},
 		)
 
-		diskReadIopsMetrics, err := job.processor.metricProvider.GetMetric(diskReadIopsRequest)
+		diskReadIopsMetrics, err := job.processor.metricProvider.GetMetric(ctx, diskReadIopsRequest)
 		if err != nil {
 			return err
 		}
@@ -124,7 +122,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 			fmt.Sprintf(
 				`metric.type="%s" AND resource.labels.instance_id="%s" AND metric.labels.device_name="%s"`,
 				"compute.googleapis.com/instance/disk/write_ops_count",
-				fmt.Sprint(job.instance.GetId()), disk.Name),
+				fmt.Sprint(item.Instance.GetId()), disk.Name),
 			&monitoringpb.TimeInterval{
 				EndTime:   timestamppb.New(endTime),
 				StartTime: timestamppb.New(startTime),
@@ -137,7 +135,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 			},
 		)
 
-		diskWriteIopsMetrics, err := job.processor.metricProvider.GetMetric(diskWriteIopsRequest)
+		diskWriteIopsMetrics, err := job.processor.metricProvider.GetMetric(ctx, diskWriteIopsRequest)
 		if err != nil {
 			return err
 		}
@@ -148,7 +146,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 			fmt.Sprintf(
 				`metric.type="%s" AND resource.labels.instance_id="%s" AND metric.labels.device_name="%s"`,
 				"compute.googleapis.com/instance/disk/read_bytes_count",
-				fmt.Sprint(job.instance.GetId()), disk.Name),
+				fmt.Sprint(item.Instance.GetId()), disk.Name),
 			&monitoringpb.TimeInterval{
 				EndTime:   timestamppb.New(endTime),
 				StartTime: timestamppb.New(startTime),
@@ -161,7 +159,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 			},
 		)
 
-		diskReadThroughputMetrics, err := job.processor.metricProvider.GetMetric(diskReadThroughputRequest)
+		diskReadThroughputMetrics, err := job.processor.metricProvider.GetMetric(ctx, diskReadThroughputRequest)
 		if err != nil {
 			return err
 		}
@@ -172,7 +170,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 			fmt.Sprintf(
 				`metric.type="%s" AND resource.labels.instance_id="%s" AND metric.labels.device_name="%s"`,
 				"compute.googleapis.com/instance/disk/write_bytes_count",
-				fmt.Sprint(job.instance.GetId()), disk.Name),
+				fmt.Sprint(item.Instance.GetId()), disk.Name),
 			&monitoringpb.TimeInterval{
 				EndTime:   timestamppb.New(endTime),
 				StartTime: timestamppb.New(startTime),
@@ -185,7 +183,7 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 			},
 		)
 
-		diskWriteThroughputMetrics, err := job.processor.metricProvider.GetMetric(diskWriteThroughputRequest)
+		diskWriteThroughputMetrics, err := job.processor.metricProvider.GetMetric(ctx, diskWriteThroughputRequest)
 		if err != nil {
 			return err
 		}
@@ -198,35 +196,24 @@ func (job *GetComputeInstanceMetricsJob) Run(ctx context.Context) error {
 	instanceMetrics["cpuUtilization"] = cpumetric
 	instanceMetrics["memoryUtilization"] = memoryMetric
 
-	oi := ComputeInstanceItem{
-		ProjectId:           job.processor.provider.ProjectID,
-		Name:                *job.instance.Name,
-		Id:                  strconv.FormatUint(job.instance.GetId(), 10),
-		MachineType:         util.TrimmedString(*job.instance.MachineType, "/"),
-		Region:              util.TrimmedString(*job.instance.Zone, "/"),
-		Platform:            job.instance.GetCpuPlatform(),
-		OptimizationLoading: true,
-		Preferences:         preferences.DefaultComputeEnginePreferences,
-		Skipped:             false,
-		LazyLoadingEnabled:  false,
-		SkipReason:          "NA",
-		Instance:            job.instance,
-		Disks:               job.disks,
-		Metrics:             instanceMetrics,
-		DisksMetrics:        disksMetrics,
-	}
+	item.OptimizationLoading = true
+	item.Skipped = false
+	item.SkipReason = "N/A"
+	item.LazyLoadingEnabled = false
+	item.Metrics = instanceMetrics
+	item.DisksMetrics = disksMetrics
 
-	for d, v := range oi.DisksMetrics {
+	for d, v := range item.DisksMetrics {
 		for k, v := range v {
 			log.Printf("%s %s : %d", d, k, len(v))
 		}
 	}
 
-	job.processor.items.Set(oi.Id, oi)
-	job.processor.publishOptimizationItem(oi.ToOptimizationItem())
+	job.processor.items.Set(item.Id, item)
+	job.processor.publishOptimizationItem(item.ToOptimizationItem())
+	job.processor.UpdateSummary(item.Id)
 
-	job.processor.jobQueue.Push(NewOptimizeComputeInstancesJob(job.processor, oi))
-	job.processor.UpdateSummary(oi.Id)
+	job.processor.jobQueue.Push(NewOptimizeComputeInstancesJob(job.processor, item.Id))
 
 	return nil
 

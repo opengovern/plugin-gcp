@@ -23,8 +23,10 @@ func NewCloudMonitoring(scopes []string) *CloudMonitoring {
 }
 
 func (c *CloudMonitoring) InitializeClient(ctx context.Context) error {
-
-	c.GCP.GetCredentials(ctx)
+	err := c.GCP.GetCredentials(ctx)
+	if err != nil {
+		return err
+	}
 
 	metricClient, err := monitoring.NewMetricClient(ctx)
 	if err != nil {
@@ -60,10 +62,10 @@ func (c *CloudMonitoring) NewTimeSeriesRequest(
 
 }
 
-func (c *CloudMonitoring) GetMetric(request *monitoringpb.ListTimeSeriesRequest) ([]*golang2.DataPoint, error) {
+func (c *CloudMonitoring) GetMetric(ctx context.Context, request *monitoringpb.ListTimeSeriesRequest) ([]*golang2.DataPoint, error) {
 	var dps []*golang2.DataPoint
 
-	it := c.client.ListTimeSeries(context.Background(), request)
+	it := c.client.ListTimeSeries(ctx, request)
 	for {
 		resp, err := it.Next()
 
