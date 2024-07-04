@@ -80,10 +80,6 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 		}
 	}
 
-	grpcCtx := metadata.NewOutgoingContext(ctx, metadata.Pairs("workspace-name", "kaytu"))
-	grpcCtx, cancel := context.WithTimeout(grpcCtx, shared.GrpcOptimizeRequestTimeout)
-	defer cancel()
-
 	metrics := make(map[string]*golang2.Metric)
 	for k, v := range item.Metrics {
 		metrics[k] = &golang2.Metric{
@@ -104,7 +100,10 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 		}
 	}
 
-	response, err := job.processor.client.GCPComputeOptimization(ctx, &golang2.GCPComputeOptimizationRequest{
+	grpcCtx := metadata.NewOutgoingContext(ctx, metadata.Pairs("workspace-name", "kaytu"))
+	grpcCtx, cancel := context.WithTimeout(grpcCtx, shared.GrpcOptimizeRequestTimeout)
+	defer cancel()
+	response, err := job.processor.client.GCPComputeOptimization(grpcCtx, &golang2.GCPComputeOptimizationRequest{
 		RequestId:      wrapperspb.String(requestId),
 		CliVersion:     wrapperspb.String(version.VERSION),
 		Identification: job.processor.provider.Identify(),

@@ -164,7 +164,7 @@ func (m *ComputeInstanceProcessor) ResultsSummary() *golang.ResultSummary {
 
 func (m *ComputeInstanceProcessor) UpdateSummary(itemId string) {
 	i, ok := m.items.Get(itemId)
-	if ok && i.Wastage.Rightsizing.Recommended != nil {
+	if ok && i.Wastage != nil && i.Wastage.Rightsizing.Recommended != nil {
 		totalSaving := 0.0
 		totalCurrentCost := 0.0
 		for _, v := range i.Wastage.VolumesRightsizing {
