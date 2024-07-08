@@ -111,6 +111,7 @@ func (job *OptimizeComputeInstancesJob) Run(ctx context.Context) error {
 			Id:          utils.HashString(item.Id),
 			Zone:        item.Region,
 			MachineType: item.MachineType,
+			Preemptible: item.Preemptible,
 		},
 		Disks:        disks,
 		Preferences:  preferencesMap,

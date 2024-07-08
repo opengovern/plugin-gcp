@@ -10,6 +10,7 @@ message GcpComputeInstance {
   string id = 1;
   string zone = 2;
   string machine_type = 3;
+  bool preemptible = 4;
 }
 
 message GcpComputeDisk {
@@ -74,7 +75,8 @@ message RightsizingGcpComputeInstance {
   string machine_family = 4;
   int64 cpu = 5;
   int64 memory_mb = 6;
-  double cost = 7;
+  bool preemptible = 7;
+  double cost = 8;
 }
 
 message GcpComputeInstanceRightsizingRecommendation {
