@@ -14,6 +14,7 @@ var DefaultComputeEnginePreferences = []*golang.PreferenceItem{
 	{Service: "ComputeInstance", Key: "CPUBreathingRoom", IsNumber: true, Value: wrapperspb.String("10"), PreventPinning: true, Unit: "%"},
 	{Service: "ComputeInstance", Key: "MemoryBreathingRoom", IsNumber: true, Value: wrapperspb.String("10"), PreventPinning: true, Unit: "%"},
 	{Service: "ComputeInstance", Key: "ExcludeUpsizingFeature", Value: wrapperspb.String("Yes"), PreventPinning: true, PossibleValues: []string{"No", "Yes"}},
+	{Service: "ComputeInstance", Key: "ProvisioningModel", Pinned: true, PossibleValues: []string{"Standard", "Spot"}},
 
 	{Service: "ComputeDisk", Key: "DiskType"},
 	{Service: "ComputeDisk", Key: "DiskSizeGb", IsNumber: true, Unit: "GiB"},

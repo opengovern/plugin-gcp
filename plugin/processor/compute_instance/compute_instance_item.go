@@ -54,6 +54,7 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 	}
 
 	RegionProperty := &golang.Property{Key: "Region"}
+	ProvisioningModelProperty := &golang.Property{Key: "Provisioning Model"}
 	MachineTypeProperty := &golang.Property{Key: "Machine Type"}
 	MachineFamilyProperty := &golang.Property{Key: "Machine Family"}
 	CPUProperty := &golang.Property{Key: "  CPU"}
@@ -61,6 +62,11 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 
 	if i.Wastage != nil {
 		RegionProperty.Current = i.Wastage.Rightsizing.Current.Region
+		provisioningModel := "Standard"
+		if i.Wastage.Rightsizing.Current.Preemptible {
+			provisioningModel = "Preemptible"
+		}
+		ProvisioningModelProperty.Current = provisioningModel
 		MachineTypeProperty.Current = i.Wastage.Rightsizing.Current.MachineType
 		MachineFamilyProperty.Current = i.Wastage.Rightsizing.Current.MachineFamily
 
@@ -88,6 +94,11 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 				Value: utils.FormatPriceFloat(i.Wastage.Rightsizing.Current.Cost - i.Wastage.Rightsizing.Recommended.Cost),
 			}
 			RegionProperty.Recommended = i.Wastage.Rightsizing.Recommended.Region
+			provisioningModel := "Standard"
+			if i.Wastage.Rightsizing.Recommended.Preemptible {
+				provisioningModel = "Preemptible"
+			}
+			ProvisioningModelProperty.Recommended = provisioningModel
 			MachineTypeProperty.Recommended = i.Wastage.Rightsizing.Recommended.MachineType
 			CPUProperty.Recommended = fmt.Sprintf("%d", i.Wastage.Rightsizing.Recommended.Cpu)
 			MemoryProperty.Recommended = fmt.Sprintf("%d MB", i.Wastage.Rightsizing.Recommended.MemoryMb)
@@ -99,6 +110,7 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 	properties.Properties = append(properties.Properties, RegionProperty)
 	properties.Properties = append(properties.Properties, MachineTypeProperty)
 	properties.Properties = append(properties.Properties, MachineFamilyProperty)
+	properties.Properties = append(properties.Properties, ProvisioningModelProperty)
 	properties.Properties = append(properties.Properties, &golang.Property{
 		Key: "Compute",
 	})
