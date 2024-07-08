@@ -19,6 +19,7 @@ type ComputeInstanceItem struct {
 	MachineType         string
 	Region              string
 	Platform            string
+	Preemptible         bool
 	OptimizationLoading bool
 	Preferences         []*golang.PreferenceItem
 	Skipped             bool

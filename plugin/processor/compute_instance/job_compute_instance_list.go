@@ -62,6 +62,7 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 			MachineType:         util.TrimmedString(*instance.MachineType, "/"),
 			Region:              util.TrimmedString(*instance.Zone, "/"),
 			Platform:            instance.GetCpuPlatform(),
+			Preemptible:         *instance.Scheduling.Preemptible,
 			OptimizationLoading: true,
 			Preferences:         job.processor.defaultPreferences,
 			Skipped:             false,
