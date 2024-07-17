@@ -45,7 +45,7 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 		var disks []compute.Disk
 		for _, attachedDisk := range instance.Disks {
 			if *attachedDisk.Boot {
-				image := attachedDisk.Licenses[0] // Assuming the first license contains the image info
+				image := attachedDisk.Licenses[0]
 				instanceOsLicense = mapImageToOS(image)
 			}
 			diskURLParts := strings.Split(*attachedDisk.Source, "/")
@@ -69,6 +69,7 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 			Region:              util.TrimmedString(*instance.Zone, "/"),
 			Platform:            instance.GetCpuPlatform(),
 			Preemptible:         *instance.Scheduling.Preemptible,
+			InstanceOsLicense:   instanceOsLicense,
 			OptimizationLoading: true,
 			Preferences:         job.processor.defaultPreferences,
 			Skipped:             false,
