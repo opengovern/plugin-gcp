@@ -78,6 +78,7 @@ message RightsizingGcpComputeInstance {
   int64 memory_mb = 6;
   bool preemptible = 7;
   double cost = 8;
+  double os_license_cost = 9;
 }
 
 message GcpComputeInstanceRightsizingRecommendation {
