@@ -39,9 +39,15 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 
 	log.Printf("# of instances: %d", len(instances))
 
+	var instanceOsLicense string
+
 	for _, instance := range instances {
 		var disks []compute.Disk
 		for _, attachedDisk := range instance.Disks {
+			if *attachedDisk.Boot {
+				image := attachedDisk.Licenses[0] // Assuming the first license contains the image info
+				instanceOsLicense = mapImageToOS(image)
+			}
 			diskURLParts := strings.Split(*attachedDisk.Source, "/")
 			diskName := diskURLParts[len(diskURLParts)-1]
 
@@ -90,4 +96,23 @@ func (job *ListComputeInstancesJob) Run(ctx context.Context) error {
 
 	return nil
 
+}
+
+func mapImageToOS(image string) string {
+	if strings.Contains(image, "rhel-") {
+		if strings.Contains(image, "sap") {
+			return "rhel-sap"
+		}
+		return "rhel"
+	}
+	if strings.Contains(image, "sles-") {
+		if strings.Contains(image, "sap") {
+			return "sles-sap"
+		}
+		return "sles"
+	}
+	if strings.Contains(image, "windows") {
+		return "windows"
+	}
+	return "unknown"
 }

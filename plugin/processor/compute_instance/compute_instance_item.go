@@ -27,6 +27,7 @@ type ComputeInstanceItem struct {
 	SkipReason          string
 	Instance            *computepb.Instance
 	Disks               []compute.Disk
+	InstanceOsLicense   string
 	Metrics             map[string][]*golang2.DataPoint
 	DisksMetrics        map[string]map[string][]*golang2.DataPoint
 	Wastage             *golang2.GCPComputeOptimizationResponse
@@ -75,8 +76,16 @@ func (i ComputeInstanceItem) ComputeInstanceDevice() (*golang.ChartRow, map[stri
 		CPUProperty.Max = utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Cpu.Max))
 
 		MemoryProperty.Current = fmt.Sprintf("%d MB", i.Wastage.Rightsizing.Current.MemoryMb)
-		MemoryProperty.Average = utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Memory.Avg))
-		MemoryProperty.Max = utils.Percentage(PWrapperDouble(i.Wastage.Rightsizing.Memory.Max))
+		if PWrapperDouble(i.Wastage.Rightsizing.Memory.Avg) == nil {
+			MemoryProperty.Average = ""
+		} else {
+			MemoryProperty.Average = fmt.Sprintf("%.0f MB", *PWrapperDouble(i.Wastage.Rightsizing.Memory.Avg)/(1024*1024))
+		}
+		if PWrapperDouble(i.Wastage.Rightsizing.Memory.Max) == nil {
+			MemoryProperty.Max = ""
+		} else {
+			MemoryProperty.Max = fmt.Sprintf("%.0f MB", *PWrapperDouble(i.Wastage.Rightsizing.Memory.Max)/(1024*1024))
+		}
 
 		row.Values["current_cost"] = &golang.ChartRowItem{
 			Value: utils.FormatPriceFloat(i.Wastage.Rightsizing.Current.Cost),

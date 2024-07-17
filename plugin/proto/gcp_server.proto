@@ -11,6 +11,7 @@ message GcpComputeInstance {
   string zone = 2;
   string machine_type = 3;
   bool preemptible = 4;
+  string instance_os_license = 5;
 }
 
 message GcpComputeDisk {
