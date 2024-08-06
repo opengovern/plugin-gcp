@@ -16,7 +16,7 @@ func Ec2InstanceWastageRequest(reqBody GcpComputeInstanceWastageRequest, token s
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest("POST", "https://api.kaytu.io/kaytu/wastage/api/v1/wastage/gcp-compute", bytes.NewBuffer(payloadEncoded))
+	req, err := http.NewRequest("POST", "https://app.kaytu.io/kaytu/wastage/api/v1/wastage/gcp-compute", bytes.NewBuffer(payloadEncoded))
 	if err != nil {
 		return nil, fmt.Errorf("[ec2-instance]: %v", err)
 	}
