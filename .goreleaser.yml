@@ -12,33 +12,39 @@ checksum: {}
 
 builds:
   - id: linux
-    binary: kaytu
+    binary: plugin
     ldflags:
-      - -s -w -X github.com/{{ .Env.REPOSITORY_OWNER }}/{{ .Env.REPOSITORY_NAME }}/pkg/version.VERSION={{ .Version }}
+      - -s -w -X github.com/{{ .Env.REPOSITORY_OWNER }}/{{ .Env.REPOSITORY_NAME }}/plugin/version.VERSION={{ .Version }}
     goos:
       - linux
     goarch:
       - amd64
       - arm64
+    env:
+      - CGO_ENABLED=0
     main: ./main.go
   - id: darwin
-    binary: kaytu
+    binary: plugin
     ldflags:
-      - -s -w -X github.com/{{ .Env.REPOSITORY_OWNER }}/{{ .Env.REPOSITORY_NAME }}/pkg/version.VERSION={{ .Version }}
+      - -s -w -X github.com/{{ .Env.REPOSITORY_OWNER }}/{{ .Env.REPOSITORY_NAME }}/plugin/version.VERSION={{ .Version }}
     goos:
       - darwin
     goarch:
       - amd64
       - arm64
+    env:
+      - CGO_ENABLED=0
     main: ./main.go
   - id: windows
-    binary: kaytu
+    binary: plugin
     ldflags:
-      - -s -w -X github.com/{{ .Env.REPOSITORY_OWNER }}/{{ .Env.REPOSITORY_NAME }}/pkg/version.VERSION={{ .Version }}
+      - -s -w -X github.com/{{ .Env.REPOSITORY_OWNER }}/{{ .Env.REPOSITORY_NAME }}/plugin/version.VERSION={{ .Version }}
     goos:
       - windows
     goarch:
       - amd64
+    env:
+      - CGO_ENABLED=0
     main: ./main.go
 archives:
   - id: binary
