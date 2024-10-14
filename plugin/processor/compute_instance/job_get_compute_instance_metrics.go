@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
-	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
+	golang2 "github.com/opengovern/plugin-gcp/plugin/proto/src/golang/gcp"
 	"log"
 	"strconv"
 	"time"

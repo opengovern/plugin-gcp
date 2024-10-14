@@ -1,4 +1,4 @@
-module github.com/kaytu-io/plugin-gcp
+module github.com/opengovern/plugin-gcp
 
 go 1.21.5
 

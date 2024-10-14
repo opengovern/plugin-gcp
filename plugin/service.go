@@ -3,7 +3,7 @@ package plugin
 import (
 	"context"
 	"fmt"
-	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
+	golang2 "github.com/opengovern/plugin-gcp/plugin/proto/src/golang/gcp"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -12,11 +12,11 @@ import (
 
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
-	"github.com/kaytu-io/plugin-gcp/plugin/gcp"
-	"github.com/kaytu-io/plugin-gcp/plugin/preferences"
-	"github.com/kaytu-io/plugin-gcp/plugin/processor"
-	"github.com/kaytu-io/plugin-gcp/plugin/processor/compute_instance"
-	"github.com/kaytu-io/plugin-gcp/plugin/version"
+	"github.com/opengovern/plugin-gcp/plugin/gcp"
+	"github.com/opengovern/plugin-gcp/plugin/preferences"
+	"github.com/opengovern/plugin-gcp/plugin/processor"
+	"github.com/opengovern/plugin-gcp/plugin/processor/compute_instance"
+	"github.com/opengovern/plugin-gcp/plugin/version"
 )
 
 type GCPPlugin struct {

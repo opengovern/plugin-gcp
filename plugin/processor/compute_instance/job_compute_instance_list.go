@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	util "github.com/kaytu-io/plugin-gcp/utils"
+	util "github.com/opengovern/plugin-gcp/utils"
 )
 
 type ListComputeInstancesJob struct {

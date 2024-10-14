@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
-	"github.com/kaytu-io/plugin-gcp/plugin/processor/shared"
-	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
+	"github.com/opengovern/plugin-gcp/plugin/processor/shared"
+	golang2 "github.com/opengovern/plugin-gcp/plugin/proto/src/golang/gcp"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"strconv"
@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kaytu-io/kaytu/pkg/utils"
 	"github.com/kaytu-io/kaytu/preferences"
-	"github.com/kaytu-io/plugin-gcp/plugin/version"
+	"github.com/opengovern/plugin-gcp/plugin/version"
 )
 
 type OptimizeComputeInstancesJob struct {

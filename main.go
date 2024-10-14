@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/kaytu-io/kaytu/cmd"
 	"github.com/kaytu-io/kaytu/pkg/plugin/sdk"
-	"github.com/kaytu-io/plugin-gcp/plugin"
+	"github.com/opengovern/plugin-gcp/plugin"
 )
 
 func main() {

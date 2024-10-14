@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package plugingcp.optimization.v1;
-option go_package="github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp";
+option go_package="github.com/opengovern/plugin-gcp/plugin/proto/src/golang/gcp";
 import "google/protobuf/wrappers.proto";
 
 // Requests

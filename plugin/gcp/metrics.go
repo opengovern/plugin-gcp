@@ -3,7 +3,7 @@ package gcp
 import (
 	"context"
 	"fmt"
-	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
+	golang2 "github.com/opengovern/plugin-gcp/plugin/proto/src/golang/gcp"
 	"google.golang.org/api/iterator"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 

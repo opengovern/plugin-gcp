@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/kaytu-io/kaytu/pkg/plugin/proto/src/golang"
 	"github.com/kaytu-io/kaytu/pkg/utils"
-	golang2 "github.com/kaytu-io/plugin-gcp/plugin/proto/src/golang/gcp"
+	golang2 "github.com/opengovern/plugin-gcp/plugin/proto/src/golang/gcp"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"maps"
